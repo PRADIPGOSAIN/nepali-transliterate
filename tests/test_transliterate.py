@@ -114,7 +114,7 @@ def test_user_words():
 
 def test_dictionary_growth():
     assert transliterate("sarkar") == "सरकार"
-    assert transliterate("bidyalaya") == "बिद्यालय"
+    assert transliterate("bidyalaya") == "विद्यालय"
     assert transliterate("kasari") == "कसरी"
     assert transliterate("kahaa") == "कहाँ"
     assert transliterate("bhitra") == "भित्र"
@@ -208,6 +208,92 @@ def test_candidates_ranking():
                 os.environ.pop("NEPALI_TRANSL_HOME", None)
             else:
                 os.environ["NEPALI_TRANSL_HOME"] = old
+
+
+def test_document_punctuation():
+    # edge punctuation must not break dictionary lookup
+    assert transliterate("kathmandu,") == "काठमाडौं,"
+    assert transliterate("nepal.") == "नेपाल।"
+    assert transliterate('"namaste"') == '"नमस्ते"'
+    assert transliterate("(hello)") == "(हेल्लो)"
+    assert transliterate("miti:") == "मिति:"
+    assert transliterate("..") == "॥"
+
+
+def test_decimal_numbers():
+    assert transliterate("15.50") == "१५.५०"
+    assert transliterate("3.14") == "३.१४"
+    assert transliterate("5.") == "५।"
+    assert transliterate("kura 5. agadi") == "कुरा ५। अगाडि"
+
+
+def test_latin_passthrough():
+    assert transliterate("CDO") == "CDO"
+    assert transliterate("NGO") == "NGO"
+    assert transliterate("KATHMANDU") == "काठमाडौं"  # dict-known wins
+    assert transliterate("OM") == "ॐ"
+    assert transliterate("rbthapa@email.com.") == "rbthapa@email.com।"
+    assert transliterate("www.site.np") == "www.site.np"
+
+
+def test_suffix_composition():
+    assert transliterate("timilai") == "तिमीलाई"
+    assert transliterate("tapaaiko") == "तपाईंको"
+    assert transliterate("gharlai") == "घरलाई"
+    assert transliterate("kama") == "काम"  # short stem: no composition
+    assert transliterate("sano") == "सानो"
+    t = get_transliterator()
+    assert ("तिमीलाई", "compound:hand") in t.candidates("timilai")
+
+
+def test_official_words():
+    assert transliterate("bishaya") == "विषय"
+    assert transliterate("anudan") == "अनुदान"
+    assert transliterate("sanchalit") == "सञ्चालित"
+    assert transliterate("bidyarthiharu") == "विद्यार्थीहरू"
+    assert transliterate("padhna") == "पढ़्न"  # from human data (ढ!)
+    assert transliterate("chhan") == "छन्"
+    assert transliterate("lakh") == "लाख"
+    assert transliterate("thapa") == "थापा"
+    assert transliterate("patra") == "पत्र"
+    assert transliterate("karyalaya") == "कार्यालय"
+    assert transliterate("samasya") == "समस्या"
+
+
+def test_official_essay_lines():
+    # regression: a real nibedan letter must come out right
+    assert transliterate("shree CDO karyalaya,") == "श्री CDO कार्यालय,"
+    assert transliterate("miti: 2083-05-28.") == "मिति: २०८३-०५-२८।"
+    assert transliterate("bishaya: bidyalaya bhawan nirmanko lagi") == \
+        "विषय: विद्यालय भवन निर्माणको लागि"
+    assert transliterate("bidyarthiharu kachchi kothama") == \
+        "विद्यार्थीहरू कच्ची कोठामा"
+    assert transliterate("samparka: 98510-12345, rbthapa@email.com.") == \
+        "सम्पर्क: ९८५१०-१२३४५, rbthapa@email.com।"
+    assert transliterate("lagat estimate 15.50 lakh.") == \
+        "लागत एस्टिमेट १५.५० लाख।"
+
+
+def test_document_idempotent():
+    # re-typing our own output must not change it (IME-mixed safety)
+    t = get_transliterator()
+    for s in ["namaste kasto chha", "kathmandu, nepal.",
+              "sangaM CDO 15.50"]:
+        once = t.transliterate(s)
+        assert t.transliterate(once) == once, s
+
+
+def test_document_performance():
+    import time
+    t = get_transliterator()
+    para = ("shree mananiya pramukh jyu, tapaaiko karyalayabata prapta "
+            "patra anusar gaupalika ko suchana sabai woda ma pathaieko chha. ")
+    doc = para * 40  # ~7KB official-style document
+    t0 = time.time()
+    out = t.transliterate(doc)
+    dt = time.time() - t0
+    assert len(out) > len(doc) // 2
+    assert dt < 2.0, f"too slow: {dt:.2f}s"
 
 
 def test_file_and_batch_apis():
@@ -322,7 +408,11 @@ def run_all():
         test_merge_suggestions_pure, test_candidates_ranking,
         test_top_matches_transliterate, test_fuzzy_variants,
         test_roman_corpus_words, test_file_and_batch_apis,
-        test_preeti_bridge,
+        test_document_punctuation, test_decimal_numbers,
+        test_latin_passthrough, test_suffix_composition,
+        test_official_words, test_official_essay_lines,
+        test_document_idempotent,
+        test_document_performance, test_preeti_bridge,
     ]
     passed, failed = 0, 0
     for fn in tests:

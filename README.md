@@ -2,7 +2,7 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-42%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
 **Offline Nepali typing toolkit with roman transliteration, traditional
@@ -251,7 +251,7 @@ tests/                 33 tests, stdlib only
 ```
 
 ```bash
-python3 tests/test_transliterate.py   # 29 — engine, dict, fuzzy, candidates, file APIs, Preeti, Google
+python3 tests/test_transliterate.py   # 37 — engine, dict, fuzzy, candidates, documents, file APIs, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 ```

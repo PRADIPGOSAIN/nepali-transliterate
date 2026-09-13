@@ -204,6 +204,18 @@ and verified by tests.
 
 ### Checkpoint: Bug hunt — DONE (29+7+6 = 42 green)
 
+## Phase 15: Essay readiness — DONE (v0.11.0)
+- Wrote a real nibedan letter through the engine; fixed every systematic
+  failure it exposed (was ~40 wrong words, now reads correctly).
+- Punctuation-stripped dict lookup (kathmandu, -> काठमाडौं,) incl. a
+  same-session discovery: glued newline tokens broke lookup (fixed by
+  whitespace-preserving split).
+- Decimal dots (15.50 -> १५.५०), email/URL/ACRONYM preservation,
+  productive suffix composition (timilai -> तिमीलाई), 60 official words.
+- Idempotence + 7KB-doc performance tests. Honest eval ticked 10.7->11.6%.
+
+### Checkpoint: Essays — DONE (37+7+6 = 50 green)
+
 ## Still open (needs your machines)
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.

@@ -5,6 +5,7 @@ Based on the ne-rom-translit.mim input method (m17n database)
 
 import json
 import os
+import re
 from typing import Optional, Tuple, List, Dict
 
 try:
@@ -98,6 +99,34 @@ COMPOUND_RULES = {
 
 # Matra characters (used to detect if a char is a dependent vowel)
 MATRA_SET = set(DEPENDENT_VOWELS.values())
+
+# Devanagari digits (for the decimal-point rule: digit.digit keeps '.').
+_DEVA_DIGITS = frozenset(NUMBERS.values())
+
+# Edge punctuation stripped for dictionary lookup, then re-attached
+# transliterated (so "kathmandu," still hits the dictionary and the comma
+# survives; interior markers like t/ ~a \\ are NEVER stripped).
+_STRIP_LEAD = "\"'([{<\u00ab\u2018\u201c\u2014\u2013"
+_STRIP_TRAIL = ",;:!?.)]}'\"\u00bb\u2019\u201d\u2026\u2014\u2013"
+
+# Productive case suffixes: stem (in dictionaries) + suffix compose
+# (timi+lai -> तिमीलाई). Two-char suffixes need stems of len>=4 to avoid
+# hijacking short words (kama stays काम, not काममा).
+_SUFFIX_TABLE = {
+    "harulai": "हरूलाई", "haruma": "हरूमा", "haruko": "हरूको",
+    "harubata": "हरूबाट", "harule": "हरूले",
+    "laai": "लाई", "lai": "लाई",
+    "baata": "बाट", "bata": "बाट",
+    "dekhi": "देखि", "samma": "सम्म",
+    "sangai": "सँगै", "sanga": "सँग",
+    "dwara": "द्वारा", "prati": "प्रति",
+    "haru": "हरू",
+    "ko": "को", "ka": "का", "ki": "की",
+    "ma": "मा", "maa": "मा", "le": "ले",
+}
+
+# Latin-domain endings for URL passthrough.
+_TLDS = (".com", ".np", ".org", ".net", ".edu", ".gov", ".info", ".io")
 
 _VOWEL_LETTERS = frozenset("aeiou")
 
@@ -226,6 +255,69 @@ class NepaliTransliterator:
             return False
         return True
 
+    @staticmethod
+    def _split_affixes(word: str) -> Tuple[str, str, str]:
+        """Split edge punctuation: ("kathmandu,") -> ("", "kathmandu", ",").
+
+        Only edge characters are stripped; interior markers (t/, ~a, dots
+        in 15.50) are untouched, so this always terminates.
+        """
+        i = 0
+        while i < len(word) and word[i] in _STRIP_LEAD:
+            i += 1
+        j = len(word)
+        while j > i and word[j - 1] in _STRIP_TRAIL:
+            j -= 1
+        return word[:i], word[i:j], word[j:]
+
+    def _latin_keep(self, core: str) -> Optional[str]:
+        """Words that must stay Latin: emails, URLs, ALL-CAPS acronyms.
+
+        Returns the word unchanged, or None to continue transliterating.
+        Dict-known capitals (KATHMANDU) still resolve via dictionaries;
+        OM/AUM still give ॐ via phonetics.
+        """
+        if "@" in core:
+            return core  # email address: never transliterate
+        low = core.lower()
+        if "://" in core or low.startswith("www."):
+            return core
+        if low.endswith(_TLDS):
+            return core
+        if (len(core) > 1 and core.isupper()
+                and core not in ("OM", "AUM")
+                and low not in WORD_CORRECTIONS
+                and low not in AUTO_CORRECTIONS
+                and low not in self._user_lexicon()):
+            return core  # CDO, NGO... (Devanagari has no capitals)
+        return None
+
+    def _split_compound(self, core: str) -> Optional[Tuple[str, str]]:
+        """Productive stem+suffix composition (timi+lai -> तिमीलाई).
+
+        Returns (form, "compound") or None. Whole-word dictionary hits
+        always take precedence (checked before calling this).
+        """
+        key = core.lower()
+        for suffix in sorted(_SUFFIX_TABLE, key=len, reverse=True):
+            if len(key) <= len(suffix) or not key.endswith(suffix):
+                continue
+            stem = key[:-len(suffix)]
+            if len(suffix) <= 2 and len(stem) < 4:
+                continue  # kama stays काम, jasko handled by hand dict
+            if len(suffix) > 2 and len(stem) < 3:
+                continue
+            user = self._user_lexicon()
+            if stem in user:
+                return user[stem] + _SUFFIX_TABLE[suffix], "compound:user"
+            if stem in WORD_CORRECTIONS:
+                return (WORD_CORRECTIONS[stem] + _SUFFIX_TABLE[suffix],
+                        "compound:hand")
+            if stem in AUTO_CORRECTIONS:
+                return (AUTO_CORRECTIONS[stem] + _SUFFIX_TABLE[suffix],
+                        "compound:auto")
+        return None
+
     def _stem_mark(self, word: str) -> Optional[Tuple[str, str]]:
         """Trailing M/N/H/* applied to a resolvable stem (single level).
 
@@ -251,18 +343,16 @@ class NepaliTransliterator:
     def _ranked(self, word: str) -> List[Tuple[str, str]]:
         """Ordered (form, source) list for one word.
 
-        First entry is ALWAYS the top-1 transliterate() output (with its
-        true source), so ranking can never disagree with typing. After it
-        come vowel-collapse fuzzy and deschwa fuzzy (long keys) alternates
-        for loose spellings, then the phonetic reading if not already
-        shown. Deduplicated, order kept. NOTE: dict lookups use the
-        lowered key, but phonetics run on the ORIGINAL word because case
-        is meaningful (trailing M = anusvara, m = consonant).
+        First entry is ALWAYS the top-1 transliterate() output, so
+        ranking can never disagree with typing (both read _ranked_core).
+        After it come fuzzy/deschwa alternates; phonetic is always
+        present. Edge punctuation is transliterated and attached to
+        every form. Contract: SINGLE word (phrases: use top()).
         """
-        key = (word or "").strip().lower()
+        pre, core, suf = self._split_affixes(word or "")
+        key = core.lower()
         if not key or any(ch.isspace() for ch in key):
-            return []  # contract: single word only (phrases: use top())
-        word = (word or "").strip()  # keep original case for phonetics
+            return []
         out: List[Tuple[str, str]] = []
         seen = set()
 
@@ -271,19 +361,8 @@ class NepaliTransliterator:
                 seen.add(form)
                 out.append((form, source))
 
-        top = self._transliterate_word(word)
-        stemmed = self._stem_mark(word)
-        if self._user_lexicon().get(key) == top:
-            src = "user"
-        elif stemmed and stemmed[0] == top:
-            src = stemmed[1]
-        elif WORD_CORRECTIONS.get(key) == top:
-            src = "hand"
-        elif AUTO_CORRECTIONS.get(key) == top:
-            src = "auto"
-        else:
-            src = "phonetic"
-        add(top, src)
+        for form, source in self._ranked_core(core):
+            add(form, source)
         for form, source in self._fuzzy_index.get(
                 _collapse_vowels(key), [])[:2]:
             add(form, "fuzzy:" + source)
@@ -291,8 +370,12 @@ class NepaliTransliterator:
             for form, source in self._deschwa_index.get(
                     _deschwa_key(key), [])[:2]:
                 add(form, "deschwa:" + source)
-        add(self._transliterate_word(word, use_dict=False), "phonetic")
-        return out
+        add(self._phonetic(core), "phonetic")
+        if not pre and not suf:
+            return out
+        pre_ph = self._phonetic(pre)
+        suf_ph = self._phonetic(suf)
+        return [(pre_ph + form + suf_ph, source) for form, source in out]
 
     def candidates(self, word: str) -> List[Tuple[str, str]]:
         """Ranked Devanagari candidates for one romanized word.
@@ -337,35 +420,65 @@ class NepaliTransliterator:
         if mode != "roman":
             raise ValueError(f"unknown mode: {mode!r} {self.MODES}")
 
-        # Split by whitespace, process each word
-        words = text.split(' ')
-        result_words = []
+        # Split on whitespace runs, keeping the separators, so newlines,
+        # tabs and multi-spaces survive verbatim AND every word gets its
+        # own dictionary lookup (glued "X\\npani" tokens used to miss).
+        parts = re.split(r'(\s+)', text)
+        return ''.join(
+            p if not p or p[0].isspace() else self._transliterate_word(p)
+            for p in parts
+        )
 
-        for word in words:
-            result_words.append(self._transliterate_word(word))
+    def _ranked_core(self, core: str) -> List[Tuple[str, str]]:
+        """Ordered (form, source) for a punctuation-free core word.
 
-        return ' '.join(result_words)
+        user > stem+mark > hand > auto > compound > latin >
+        phonetic (always present). Single source of truth: both
+        transliterate() top-1 and candidates() read from here.
+        """
+        key = core.lower()
+        out: List[Tuple[str, str]] = []
+        seen = set()
+
+        def add(form, source):
+            if form and form not in seen:
+                seen.add(form)
+                out.append((form, source))
+
+        add(self._user_lexicon().get(key), "user")
+        stemmed = self._stem_mark(core)
+        if stemmed:
+            add(*stemmed)
+        add(WORD_CORRECTIONS.get(key), "hand")
+        add(AUTO_CORRECTIONS.get(key), "auto")
+        compound = self._split_compound(core)
+        if compound:
+            add(*compound)
+        add(self._latin_keep(core), "latin")
+        add(self._transliterate_word(core, use_dict=False), "phonetic")
+        return out
 
     def _transliterate_word(self, word: str, use_dict: bool = True) -> str:
         """Transliterate a single word using state machine."""
         if not word:
             return ""
-        # Exact lookup first (user > stem > hand > auto), else phonetic
-        # state machine below. Fuzzy variants NEVER decide top-1 (they
-        # misfire on short words); they only appear as click-to-learn
-        # alternates via candidates().
+        # Strip edge punctuation so "kathmandu," hits the dictionary;
+        # affixes are transliterated separately and re-attached.
+        # Fuzzy variants NEVER decide top-1 (they misfire on short
+        # words); they only appear as click-to-learn alternates.
         if use_dict:
-            user_hit = self._user_lexicon().get(word.lower())
-            if user_hit:
-                return user_hit
-            stemmed = self._stem_mark(word)
-            if stemmed:
-                return stemmed[0]
-            key = word.lower()
-            correction = WORD_CORRECTIONS.get(key, AUTO_CORRECTIONS.get(key))
-            if correction:
-                return correction
+            pre, core, suf = self._split_affixes(word)
+            if not core:
+                return self._transliterate_word(pre + suf, use_dict=False)
+            ranked = self._ranked_core(core)
+            top = ranked[0][0] if ranked else self._phonetic(core)
+            return (self._phonetic(pre) + top
+                    + self._phonetic(suf))
 
+        return self._phonetic(word)
+
+    def _phonetic(self, word: str) -> str:
+        """Raw state machine: no dictionaries, no affix logic."""
         result = []
         i = 0
         pending_consonant: Optional[str] = None
@@ -390,7 +503,7 @@ class NepaliTransliterator:
                 i += 1
                 continue
 
-            # Check for purna viram
+            # Check for purna viram (but keep decimal points: 15.50)
             if word[i] == '.':
                 if pending_consonant:
                     result.append(pending_consonant)
@@ -398,6 +511,12 @@ class NepaliTransliterator:
                 if i + 1 < len(word) and word[i + 1] == '.':
                     result.append(PUNNA_VIRAM['..'])
                     i += 2
+                elif (result and result[-1] in _DEVA_DIGITS
+                        and i + 1 < len(word)
+                        and (word[i + 1] in NUMBERS
+                             or word[i + 1] in _DEVA_DIGITS)):
+                    result.append('.')
+                    i += 1
                 else:
                     result.append(PUNNA_VIRAM['.'])
                     i += 1
