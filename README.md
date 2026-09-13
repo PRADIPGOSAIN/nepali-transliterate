@@ -2,7 +2,7 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-35%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-36%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
 **Type Nepali everywhere — offline, on any OS.** An independent,
@@ -33,12 +33,18 @@ No accounts. No cloud. No tracking. Your keystrokes never leave your machine.
 git clone https://github.com/PRADIPGOSAIN/nepali-transliterate.git
 cd nepali-transliterate
 
-python3 -m core.cli "namaste kasto chha"
-# नमस्ते कस्तो छ
+python3 -m core.cli "mero nam pradip gosai ho"
+# मेरो नाम प्रदिप गोसाई हो
 
 python3 web/app.py        # typing tool + visual keyboard → http://127.0.0.1:8000
 python3 desktop/app.py    # desktop app (needs Tk, see Install)
 ```
+
+> **Want Nepali to appear while you type?** Tick **⌨️ Typewriter**
+> in the web tool (or desktop app): type `gosai`, see
+> `gosai → गोसाई` live under the box, hit **space** and the word
+> converts in place. **Backspace** right after converts it back to
+> roman so you can fix it. Wrong word? The one-click suggestions fix it.
 
 Requirements: Python 3.8+. CLI and web app need nothing else —
 no `pip install`, no virtualenv, no internet.
@@ -225,7 +231,7 @@ tests/                 33 tests, stdlib only
 ```
 
 ```bash
-python3 tests/test_transliterate.py   # 22 — engine, dict, Preeti, Google
+python3 tests/test_transliterate.py   # 23 — engine, dict, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 ```

@@ -63,7 +63,11 @@
 
 <div class="box">
   <label><b>Input:</b></label>
+  <label class="hint" style="margin-left:12px" title="Type Nepali directly here: space converts the word, backspace undoes it">
+    <input type="checkbox" id="imeMode" onchange="onImeToggle()">
+    ⌨️ Typewriter (live Nepali while typing)</label>
   <textarea id="roman" placeholder="namaste..."></textarea>
+  <div id="live" class="hint" style="margin:4px 0;min-height:1.2em"></div>
   <div id="suggest"></div>
 </div>
 
@@ -226,6 +230,98 @@ function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
 }
+
+/* ---- typewriter (IME) mode: Nepali forms live, in this same box ----
+   Space/Enter converts the current roman word in place; Backspace right
+   after a conversion restores the roman word. Roman mode only. */
+let lastCommit = null;   // {roman, nepali} just committed at end of text
+let liveSeq = 0, liveInflight = null, liveCache = {roman: '', nepali: ''};
+
+function imeOn() {
+  return document.getElementById('imeMode').checked &&
+         currentMode() === 'roman';
+}
+function onImeToggle() {
+  lastCommit = null;
+  updateLive();
+}
+function romanTail(text) {
+  const m = text.match(/[A-Za-z0-9~.*\\/'`]+$/);
+  return m ? m[0] : '';
+}
+async function quickTranslit(word) {
+  if (!word) return '';
+  try {
+    const r = await fetch('/api/transliterate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: word, mode: 'roman'})
+    });
+    const d = await r.json();
+    return d.result || '';
+  } catch (e) { return ''; }
+}
+async function updateLive() {
+  const mySeq = ++liveSeq;
+  if (liveInflight) { try { liveInflight.abort(); } catch (e) {} }
+  const liveEl = document.getElementById('live');
+  if (!imeOn()) { liveEl.textContent = ''; return; }
+  const tail = romanTail(romanEl.value.slice(0, romanEl.selectionStart));
+  if (romanEl.selectionStart !== romanEl.value.length || !tail) {
+    liveEl.textContent = '';
+    return;
+  }
+  if (liveCache.roman === tail) {
+    liveEl.innerHTML = '<b>' + escapeHtml(tail) + '</b> → <b>' +
+      escapeHtml(liveCache.nepali) + '</b> ⏎: keep typing, SPACE: convert';
+    return;
+  }
+  const ctrl = new AbortController();
+  liveInflight = ctrl;
+  try {
+    const r = await fetch('/api/transliterate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: tail, mode: 'roman'}),
+      signal: ctrl.signal
+    });
+    const d = await r.json();
+    if (mySeq !== liveSeq) return;
+    liveCache = {roman: tail, nepali: d.result || ''};
+    liveEl.innerHTML = '<b>' + escapeHtml(tail) + '</b> → <b>' +
+      escapeHtml(liveCache.nepali) + '</b> ⏎: keep typing, SPACE: convert';
+  } catch (e) { /* aborted or offline: stay quiet */ }
+}
+romanEl.addEventListener('input', () => { lastCommit = null; updateLive(); });
+romanEl.addEventListener('keydown', async (e) => {
+  if (!imeOn()) return;
+  const atEnd = romanEl.selectionStart === romanEl.value.length &&
+                romanEl.selectionEnd === romanEl.value.length;
+  if ((e.key === ' ' || e.key === 'Enter') && atEnd) {
+    const tail = romanTail(romanEl.value);
+    if (!tail) return;  // already spaced: normal key
+    e.preventDefault();
+    let nep = (liveCache.roman === tail) ? liveCache.nepali : '';
+    if (!nep) nep = await quickTranslit(tail);
+    if (!nep) return;
+    romanEl.value = romanEl.value.slice(0, -tail.length) + nep +
+                    (e.key === ' ' ? ' ' : '\n');
+    lastCommit = {roman: tail, nepali: nep};
+    updateLive();
+    update();
+  } else if (e.key === 'Backspace' && atEnd && lastCommit) {
+    const suffix = lastCommit.nepali + ' ';
+    const suffixNl = lastCommit.nepali + '\n';
+    if (romanEl.value.endsWith(suffix) || romanEl.value.endsWith(suffixNl)) {
+      e.preventDefault();
+      romanEl.value = romanEl.value.slice(0, -(lastCommit.nepali.length + 1)) +
+                      lastCommit.roman;
+      lastCommit = null;
+      updateLive();
+      update();
+    }
+  }
+});
 document.addEventListener('keydown', e => {
   if (e.key.length !== 1) return;
   const b = document.querySelector(

@@ -7,6 +7,7 @@ Usage:  python3 desktop/app.py
 """
 import os
 import platform
+import re
 import sys
 import threading
 import tkinter as tk
@@ -66,8 +67,58 @@ class App(tk.Tk):
         ttk.Checkbutton(modebar, text="+Google suggestions",
                         variable=self.google_var,
                         command=self._update).pack(side="left", padx=4)
+        self.ime_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(modebar, text="⌨️ Typewriter",
+                        variable=self.ime_var).pack(side="left", padx=4)
         self._seq = 0
         self._gcache = {}
+        self._commit = None  # (roman, nepali) just committed, for Backspace-revert
+        self.roman.bind("<space>", lambda e: self._ime_commit(e, " "))
+        self.roman.bind("<Return>", lambda e: self._ime_commit(e, "\n"))
+        self.roman.bind("<BackSpace>", self._ime_revert)
+
+    ROMAN_TAIL = re.compile(r"[A-Za-z0-9~.*\\/']+$")
+
+    def _ime_active(self):
+        return self.ime_var.get() and self.mode.get() == "roman"
+
+    def _at_end(self):
+        try:
+            return self.roman.compare("insert", "==", "end-1c")
+        except tk.TclError:
+            return False
+
+    def _ime_commit(self, _evt, sep):
+        if not self._ime_active() or not self._at_end():
+            return None  # normal key behavior
+        before = self.roman.get("1.0", "insert")
+        m = self.ROMAN_TAIL.search(before)
+        if not m:
+            return None
+        tail = m.group(0)
+        nep = TR.transliterate(tail)
+        if not nep:
+            return None
+        self.roman.delete(f"insert-{len(tail)}c", "insert")
+        self.roman.insert("insert", nep + sep)
+        self._commit = (tail, nep)
+        self._update()
+        return "break"
+
+    def _ime_revert(self, _evt):
+        if not self._ime_active() or not self._at_end() or not self._commit:
+            self._commit = None
+            return None
+        roman, nep = self._commit
+        text = self.roman.get("1.0", "end-1c")
+        if text.endswith(nep + " ") or text.endswith(nep + "\n"):
+            self.roman.delete(f"end-{len(nep) + 2}c", "end-1c")
+            self.roman.insert("end-1c", roman)
+            self._commit = None
+            self._update()
+            return "break"
+        self._commit = None
+        return None
         self.input_label = ttk.Label(self, text="")
         self.input_label.pack(anchor="w", **pad)
         self.roman = tk.Text(self, height=7, font=("TkDefaultFont", 14))

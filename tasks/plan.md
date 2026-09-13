@@ -149,6 +149,17 @@ and verified by tests.
 
 ### Checkpoint: Speed — DONE (22+7+6 = 35 green)
 
+## Phase 11: Live typewriter (IME) mode — DONE (v0.8.0)
+- Request: see Nepali forming in real time while typing, fix mid-word.
+- Web: ⌨️ Typewriter toggle — live `roman → nepali` strip under the box,
+  SPACE/ENTER commits the word in place, Backspace reverts to roman,
+  suggestion click commits. Zero-debounce live fetch (~11ms localhost).
+- Desktop: same bindings in tkinter (commit/revert, roman mode).
+- Fixed real user words: nam→नाम, gosai→गोसाई, gosain→गोसाईं.
+- JS validated with node --check; API commit flow verified by curl.
+
+### Checkpoint: Typewriter — DONE (23+7+6 = 36 green)
+
 ## Still open (needs your machines)
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.

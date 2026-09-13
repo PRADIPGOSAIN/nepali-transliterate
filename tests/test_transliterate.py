@@ -98,6 +98,12 @@ def test_avagraha_and_halant():
     assert transliterate("nepali") == "नेपाली"
 
 
+def test_user_words():
+    # words from real usage: nam->नाम (not नम), gosai->गोसाई
+    assert transliterate("mero nam pradip gosai ho") == "मेरो नाम प्रदिप गोसाई हो"
+    assert transliterate("gosain") == "गोसाईं"
+
+
 def test_dictionary_growth():
     assert transliterate("sarkar") == "सरकार"
     assert transliterate("bidyalaya") == "बिद्यालय"
@@ -204,7 +210,7 @@ def run_all():
         test_retroflex_slash_forms, test_variant_consonants,
         test_rri_vowel_priority, test_short_i_matra,
         test_midword_anuswar, test_avagraha_and_halant,
-        test_dictionary_growth, test_sentence_probes,
+        test_dictionary_growth, test_user_words, test_sentence_probes,
         test_suggestions_ranked, test_auto_dictionary_quality,
         test_google_backend_optional, test_cli_google_optional,
         test_merge_suggestions_pure, test_preeti_bridge,

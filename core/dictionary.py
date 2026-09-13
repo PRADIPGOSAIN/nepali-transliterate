@@ -141,6 +141,10 @@ WORD_CORRECTIONS = {
     'bolneharulai': 'बोल्नेहरूलाई',
     # mb/nb clusters users never intend as conjuncts
     'sombar': 'सोमबार',
+    # short-vowel typings of long-vowel words
+    'nam': 'नाम',
+    'gosai': 'गोसाई',
+    'gosain': 'गोसाईं',
 }
 
 # Suggestion wordlist (romanized forms for autocomplete)
