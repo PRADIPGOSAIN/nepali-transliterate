@@ -3,6 +3,7 @@ c Source project: nepali-transl engine by Pradip Gosain (GPL-2.0-or-later)
 c License: GPL-2.0-or-later
 
 store(&VERSION) '10.0'
+store(&KEYBOARDVERSION) '0.11.0'
 store(&NAME) 'Nepali Transliterate'
 store(&COPYRIGHT) 'GPL-2.0-or-later'
 store(&MESSAGE) 'Romanized Nepali: type namaste -> \U0928\U092E\U0938\U094D\U0924\U0947'

@@ -2,7 +2,7 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-58%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
 **Offline Nepali typing toolkit with roman transliteration, traditional
@@ -77,6 +77,15 @@ Verify with `python3 --version`.)
    (or `python -m core.cli "namaste"`).
 
 No admin rights, no reboot, no keyboard-layout install.
+
+**No Python?** Grab `NepaliTransliterate.exe` from
+[Releases](https://github.com/PRADIPGOSAIN/nepali-transliterate/releases)
+— double-click and type. (Build it yourself on any OS:
+`pip install pyinstaller`, then
+`pyinstaller --onefile --windowed --name NepaliTransliterate desktop/app.py`.)
+For system-wide typing (directly into Word etc.), install the
+`nepali_translit.kmp` from Releases into Keyman — same keystrokes
+everywhere.
 
 ### macOS
 
@@ -163,13 +172,13 @@ Type directly into Word, browsers, chat — any application:
   Same keystrokes as this project's roman mode. (`ibus` + `ibus-m17n`
   works too.)
 - **Windows / macOS / Android / iOS** — via Keyman (free, open source):
-  `python3 keyman/gen_kmn.py` regenerates `keyman/nepali_translit.kmn`
-  from this project's mapping; open it in
-  [Keyman Developer](https://keyman.com/developer), build the `.kmp`,
-  install it. (The generated `.kmn` already compiles clean with the
-  `kmc` 18 compiler — zero errors; only longest-match warnings, which are
-  expected for transliteration contexts. Packaging into `.kmp` still
-  needs doing — see Open work below.)
+  install `nepali_translit.kmp` from
+  [Releases](https://github.com/PRADIPGOSAIN/nepali-transliterate/releases)
+  into Keyman Desktop/Mobile. Rebuild it yourself:
+  `python3 keyman/gen_kmn.py` regenerates the `.kmn` from this project's
+  mapping; `kmc build file keyman/nepali_translit.kmn -o keyman/build/…`
+  compiles it (verified clean with `kmc` 18 — zero errors), and
+  `kmc build file keyman/package/nepali_translit.kps` packs the `.kmp`.
 
 ## Dictionary & data
 
@@ -254,6 +263,8 @@ tests/                 33 tests, stdlib only
 python3 tests/test_transliterate.py   # 37 — engine, dict, fuzzy, candidates, documents, file APIs, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
+python3 tests/test_desktop.py         # 5 — GUI build, typing, modes, IME (skips headless)
+python3 tests/test_keyman.py           # 3 — .kmn coverage, structure, package XML
 ```
 
 ## Open work

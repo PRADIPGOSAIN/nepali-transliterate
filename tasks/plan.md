@@ -216,7 +216,25 @@ and verified by tests.
 
 ### Checkpoint: Essays — DONE (37+7+6 = 50 green)
 
-## Still open (needs your machines)
+## Phase 16: Ship everything — DONE (v0.12.0)
+- Desktop launch test caught a REAL crash (IME binds before widget
+  creation) + a scoping defect (half the UI unreachable dead code);
+  fixed, covered by tests/test_desktop.py incl. event-driven IME test.
+- PyInstaller one-file binary builds and launches clean (30MB Linux).
+- Keyman .kmp BUILT with kmc 18 (fixed 4 spec violations found by the
+  real compiler); .kmx (26KB) + web .js + .kmp (9.8KB) all emit clean.
+- keyman/package project files (.kpj/.kps/readme.htm) added + tested.
+- PyPI wheel/sdist build, twine check passes, wheel install proven.
+- GitHub Release v0.12.0 ships: Linux exe + .kmp + wheel + sdist.
+
+### Checkpoint: Ship — DONE (37+7+6+5+3 = 58 green)
+
+## Still open (human steps only)
+- PyPI upload needs your PyPI account (`twine upload dist/nepali_transl-*`;
+  packages are validated and ready).
+- Windows .exe must be built ON Windows (PyInstaller is host-only):
+  same one-line command as above.
+- Try the .kmp in real Keyman Desktop/mobile apps.
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.
 - Desktop GUI launch + Wayland clipboard check on your KDE session.

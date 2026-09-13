@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package>
+  <System>
+    <KeymanDeveloperVersion>18.0.0.0</KeymanDeveloperVersion>
+    <FileVersion>7.0</FileVersion>
+  </System>
+  <Options>
+    <ExecuteProgram></ExecuteProgram>
+    <ReadMeFile>readme.htm</ReadMeFile>
+    <LicenseFile>..\..\LICENSE</LicenseFile>
+    <MSIFileName></MSIFileName>
+    <MSIOptions></MSIOptions>
+    <FollowKeyboardVersion/>
+  </Options>
+  <Info>
+    <Name>Nepali Transliterate</Name>
+    <Copyright>Pradip Gosain (GPL-2.0-or-later)</Copyright>
+    <Author>Pradip Gosain</Author>
+    <Version>0.12.0</Version>
+    <WebSite>https://github.com/PRADIPGOSAIN/nepali-transliterate</WebSite>
+    <Description>Romanized Nepali transliteration (namaste -&gt; नमस्ते). Same mapping as the nepali-transl offline engine.</Description>
+  </Info>
+  <Files>
+    <File>
+      <Name>..\build\nepali_translit.kmx</Name>
+      <Description></Description>
+      <CopyLocation>0</CopyLocation>
+      <FileType>.kmx</FileType>
+    </File>
+    <File>
+      <Name>..\build\nepali_translit.js</Name>
+      <Description></Description>
+      <CopyLocation>0</CopyLocation>
+      <FileType>.js</FileType>
+    </File>
+    <File>
+      <Name>readme.htm</Name>
+      <Description></Description>
+      <CopyLocation>0</CopyLocation>
+      <FileType>.htm</FileType>
+    </File>
+  </Files>
+  <Keyboards>
+    <Keyboard>
+      <Name>Nepali Transliterate</Name>
+      <ID>nepali_translit</ID>
+      <Version>0.12.0</Version>
+      <Languages>
+        <Language ID="ne">Nepali (macrolanguage)</Language>
+      </Languages>
+    </Keyboard>
+  </Keyboards>
+  <Strings/>
+</Package>

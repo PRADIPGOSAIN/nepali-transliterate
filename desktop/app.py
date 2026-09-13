@@ -27,7 +27,9 @@ class App(tk.Tk):
         super().__init__()
         self.title("नेपाली Transliterate")
         self.geometry("720x560")
+        self._ready = False  # radio commands fire during build; ignore those
         self._build()
+        self._ready = True
 
     @staticmethod
     def _devanagari_font() -> str:
@@ -74,10 +76,36 @@ class App(tk.Tk):
         self._seq = 0
         self._gcache = {}
         self._last_gfetch = 0.0
-        self._commit = None  # (roman, nepali) just committed, for Backspace-revert
+
+        self.input_label = ttk.Label(self, text="")
+        self.input_label.pack(anchor="w", **pad)
+        self.roman = tk.Text(self, height=7, font=("TkDefaultFont", 14))
+        self.roman.pack(fill="both", expand=False, **pad)
+        self.roman.bind("<<Modified>>", self._on_edit)
+        # Typewriter bindings (need the widget to exist first).
         self.roman.bind("<space>", lambda e: self._ime_commit(e, " "))
         self.roman.bind("<Return>", lambda e: self._ime_commit(e, "\n"))
         self.roman.bind("<BackSpace>", self._ime_revert)
+
+        self.sugg_frame = ttk.Frame(self)
+        self.sugg_frame.pack(fill="x", **pad)
+        self.forms_frame = ttk.Frame(self)
+        self.forms_frame.pack(fill="x", **pad)
+
+        ttk.Label(self, text="नेपाली Unicode output:").pack(anchor="w", **pad)
+        self.out = tk.Text(self, height=7, wrap="word",
+                           font=(self._devanagari_font(), 18))
+        self.out.pack(fill="both", expand=True, **pad)
+
+        btns = ttk.Frame(self)
+        btns.pack(fill="x", **pad)
+        ttk.Button(btns, text="Copy output", command=self._copy).pack(side="left", padx=4)
+        ttk.Button(btns, text="Clear", command=self._clear).pack(side="left", padx=4)
+        self.status = ttk.Label(
+            btns, text=f"Offline • v{ENGINE_VERSION} • by Pradip Gosain",
+            foreground="gray")
+        self.status.pack(side="right", padx=4)
+        self._commit = None  # (roman, nepali) just committed, for Backspace-revert
 
     ROMAN_TAIL = re.compile(r"[A-Za-z0-9~.*\\/']+$")
 
@@ -121,30 +149,6 @@ class App(tk.Tk):
             return "break"
         self._commit = None
         return None
-        self.input_label = ttk.Label(self, text="")
-        self.input_label.pack(anchor="w", **pad)
-        self.roman = tk.Text(self, height=7, font=("TkDefaultFont", 14))
-        self.roman.pack(fill="both", expand=False, **pad)
-        self.roman.bind("<<Modified>>", self._on_edit)
-
-        self.sugg_frame = ttk.Frame(self)
-        self.sugg_frame.pack(fill="x", **pad)
-        self.forms_frame = ttk.Frame(self)
-        self.forms_frame.pack(fill="x", **pad)
-
-        ttk.Label(self, text="नेपाली Unicode output:").pack(anchor="w", **pad)
-        self.out = tk.Text(self, height=7, wrap="word",
-                           font=(self._devanagari_font(), 18))
-        self.out.pack(fill="both", expand=True, **pad)
-
-        btns = ttk.Frame(self)
-        btns.pack(fill="x", **pad)
-        ttk.Button(btns, text="Copy output", command=self._copy).pack(side="left", padx=4)
-        ttk.Button(btns, text="Clear", command=self._clear).pack(side="left", padx=4)
-        self.status = ttk.Label(
-            btns, text=f"Offline • v{ENGINE_VERSION} • by Pradip Gosain",
-            foreground="gray")
-        self.status.pack(side="right", padx=4)
 
     def _set_status(self, msg):
         self.status.config(text=msg)
@@ -162,6 +166,8 @@ class App(tk.Tk):
     }
 
     def _update(self):
+        if not getattr(self, "_ready", False):
+            return
         mode = self.mode.get()
         self.input_label.config(text=self._HINTS.get(mode, "Input:"))
         text = self.roman.get("1.0", "end").strip()

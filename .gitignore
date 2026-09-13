@@ -4,8 +4,12 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+*.spec
 .venv/
 venv/
 # Project QA artefacts (local only, never distributed)
 tools/.google_cache.jsonl
 tools/google_review.tsv
+# Build outputs (ship via GitHub Releases, not git)
+keyman/build/
+keyman/package/*.kmp

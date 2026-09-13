@@ -20,6 +20,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from core import __version__ as ENGINE_VERSION
 from core.nepali_transl import (
     CONSONANT_MAP,
     INDEPENDENT_VOWELS,
@@ -47,6 +48,7 @@ def build_kmn() -> str:
     A("c License: GPL-2.0-or-later")
     A("")
     A("store(&VERSION) '10.0'")
+    A(f"store(&KEYBOARDVERSION) '{ENGINE_VERSION}'")
     A("store(&NAME) 'Nepali Transliterate'")
     A("store(&COPYRIGHT) 'GPL-2.0-or-later'")
     A("store(&MESSAGE) 'Romanized Nepali: type namaste -> \\U0928\\U092E\\U0938\\U094D\\U0924\\U0947'")
