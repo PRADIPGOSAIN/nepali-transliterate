@@ -13,7 +13,6 @@ optional dependency:
 
 Core transliteration (romanized -> Unicode) stays zero-dependency stdlib.
 """
-from typing import Optional
 
 _MISSING_MSG = (
     "Preeti conversion needs the optional package "

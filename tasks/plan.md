@@ -186,6 +186,24 @@ and verified by tests.
 
 ### Checkpoint: Roman data — DONE (28+7+6 = 41 green)
 
+## Phase 14: Deep bug hunt — DONE (v0.10.1)
+- 6,000-input fuzz: zero crashes; nasty unicode/long inputs sane.
+- Invariant top()==transliterate() over 1,714 words (found+fixed:
+  candidates() phrase contract + case-safe phonetics).
+- Full source re-read. Fixed: dead imports/vars/params, dead matra
+  branch (documented), web race on IME commit, clearAll gaps, clipboard
+  fallback, version single-sourcing (page gets it from server),
+  desktop Google thread throttle + version footer, bench/eval lexicon
+  isolation, softer Google assertions, tmpdir cleanup, full exports.
+- Content bug: lesson `k \ q` -> प्त्र, not क्त (now `s \ t`).
+- Keyman .kmn now COMPILES with kmc 18 (fixed: &LANGUAGE removal,
+  space-separated context, explicit combo rules replacing rejected
+  any()+index() second-position form, nul removal). 26KB .kmx, 0 errors.
+- 74 hand entries spot-checked vs Sabdakosh (36 headwords + 38 valid
+  inflections, no wrong spellings found).
+
+### Checkpoint: Bug hunt — DONE (29+7+6 = 42 green)
+
 ## Still open (needs your machines)
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.

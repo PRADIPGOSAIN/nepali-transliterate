@@ -59,6 +59,10 @@ def main(argv):
         elif not a.startswith("--"):
             paths.append(a)
     paths = paths or ["/tmp/nep_valid.json", "/tmp/nep_test.json"]
+    # Isolate the user lexicon: a developer's learned words must not leak
+    # into "honest" numbers (or pollute their real lexicon file).
+    import tempfile
+    os.environ["NEPALI_TRANSL_HOME"] = tempfile.mkdtemp(prefix="eval-split-")
     rows = load_rows(paths)
     if only_source:
         rows = [r for r in rows if r.get("source") == only_source]

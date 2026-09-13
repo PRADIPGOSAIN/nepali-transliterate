@@ -12,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from core import __version__ as ENGINE_VERSION
 from core.nepali_transl import NepaliTransliterator, get_transliterator
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +55,7 @@ def merge_suggestions(base, extra, limit=8):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "NepaliTransl/0.1"
+    server_version = "NepaliTransl/" + ENGINE_VERSION
 
     def _send(self, code, body: bytes, ctype="text/html; charset=utf-8"):
         self.send_response(code)
@@ -67,11 +68,14 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path in ("/", "/index.html"):
             with open(os.path.join(HERE, "index.html"), "rb") as f:
-                self._send(200, f.read())
+                page = f.read().replace(
+                    b"__ENGINE_VERSION__",
+                    ENGINE_VERSION.encode("ascii"))
+            self._send(200, page)
         elif path == "/api/health":
-            from core import __version__ as _v
-            self._send(200, json.dumps({"ok": True, "version": _v}).encode(),
-                       "application/json")
+            self._send(200, json.dumps(
+                {"ok": True, "version": ENGINE_VERSION}).encode(),
+                "application/json")
         elif path == "/api/layouts":
             from core.traditional import (TRAD_MAP, TRAD_KMN_MAP,
                                           LAYOUT_NAME, LAYOUT_KMN_NAME,

@@ -117,7 +117,7 @@
       <kbd>Q</kbd>→त्त <kbd>T</kbd>→ट्ट <kbd>I</kbd>→क्ष
       <kbd>!</kbd>→ज्ञ <kbd>$</kbd>→द्ध.</li>
     <li><b>Conjuncts:</b> <kbd>\</kbd> is halant ् —
-      <kbd>k \ q</kbd> → क्त. <kbd>[</kbd> is repha र्.</li>
+      <kbd>s \ t</kbd> → क्त. <kbd>[</kbd> is repha र्.</li>
     <li><b>Words:</b> <kbd>gfdLGL</kbd> → नामीद्दी.
       Graduate to Romanized mode: <kbd>namaste</kbd> → नमस्ते.</li>
   </ol>
@@ -192,7 +192,7 @@ romanEl.addEventListener('input', () => {
   if (slow) t = setTimeout(update, 400);
   else update();
 });
-const EXPECTED_ENGINE = '0.8.2';
+const EXPECTED_ENGINE = '__ENGINE_VERSION__';  // filled by web/app.py
 fetch('/api/health').then(r => r.json()).then(d => {
   const ver = d.version || 'OLD (no version)';
   document.getElementById('verSpan').textContent = 'engine v' + ver;
@@ -376,9 +376,18 @@ romanEl.addEventListener('keydown', async (e) => {
     e.preventDefault();
     let nep = (liveCache.roman === tail) ? liveCache.nepali : '';
     if (!nep) nep = await quickTranslit(tail);
-    if (!nep) return;
-    romanEl.value = romanEl.value.slice(0, -tail.length) + nep +
-                    (e.key === ' ' ? ' ' : '\n');
+    // User may have typed more during the fetch: re-validate before
+    // touching the text, otherwise fall back to a plain space/newline.
+    const sep = (e.key === ' ' ? ' ' : '\n');
+    if (!nep || romanTail(romanEl.value) !== tail ||
+        romanEl.selectionStart !== romanEl.value.length) {
+      romanEl.value += sep;
+      lastCommit = null;
+      updateLive();
+      update();
+      return;
+    }
+    romanEl.value = romanEl.value.slice(0, -tail.length) + nep + sep;
     lastCommit = {roman: tail, nepali: nep};
     updateLive();
     update();
@@ -408,8 +417,22 @@ document.addEventListener('keyup', e => {
 loadVk();
 
 function copyOut() {
-  navigator.clipboard.writeText(outEl.textContent).then(() =>
-    alert('Copied!'));
+  const done = () => alert('Copied!');
+  if (navigator.clipboard && window.isSecureContext !== false) {
+    navigator.clipboard.writeText(outEl.textContent).then(done).catch(() =>
+      legacyCopy(done));
+  } else {
+    legacyCopy(done);
+  }
+}
+function legacyCopy(done) {
+  const ta = document.createElement('textarea');
+  ta.value = outEl.textContent;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); }
+  catch (e) { alert('Copy failed — select the text manually.'); }
+  document.body.removeChild(ta);
 }
 function downloadTxt() {
   const blob = new Blob([outEl.textContent], {type: 'text/plain;charset=utf-8'});
@@ -418,7 +441,12 @@ function downloadTxt() {
   a.download = 'nepali.txt';
   a.click();
 }
-function clearAll() { romanEl.value = ''; outEl.textContent = ''; sugEl.innerHTML = ''; }
+function clearAll() {
+  romanEl.value = ''; outEl.textContent = ''; sugEl.innerHTML = '';
+  document.getElementById('forms').innerHTML = '';
+  document.getElementById('live').textContent = '';
+  lastCommit = null;
+}
 </script>
 </body>
 </html>

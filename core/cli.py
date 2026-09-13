@@ -43,8 +43,18 @@ def main(argv=None):
         print("remembered" if ok else "not stored (check inputs)")
         return 0 if ok else 1
     if args.cands:
-        for form, source in tr.candidates(args.cands):
-            print(f"{form}\t({source})")
+        words = args.cands.split()
+        if not words:
+            print("error: --cands needs a word.", file=sys.stderr)
+            return 2
+        for w in words:
+            cands = tr.candidates(w)
+            if len(words) > 1:
+                print(f"== {w} ==")
+            if not cands:
+                print("(no candidates)")
+            for form, source in cands:
+                print(f"{form}\t({source})")
         return 0
 
     if args.text is not None:

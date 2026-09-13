@@ -10,11 +10,13 @@ import platform
 import re
 import sys
 import threading
+import time
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk, messagebox
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from core import __version__ as ENGINE_VERSION
 from core.nepali_transl import get_transliterator
 
 TR = get_transliterator()
@@ -71,6 +73,7 @@ class App(tk.Tk):
                         variable=self.ime_var).pack(side="left", padx=4)
         self._seq = 0
         self._gcache = {}
+        self._last_gfetch = 0.0
         self._commit = None  # (roman, nepali) just committed, for Backspace-revert
         self.roman.bind("<space>", lambda e: self._ime_commit(e, " "))
         self.roman.bind("<Return>", lambda e: self._ime_commit(e, "\n"))
@@ -138,8 +141,9 @@ class App(tk.Tk):
         btns.pack(fill="x", **pad)
         ttk.Button(btns, text="Copy output", command=self._copy).pack(side="left", padx=4)
         ttk.Button(btns, text="Clear", command=self._clear).pack(side="left", padx=4)
-        self.status = ttk.Label(btns, text="Offline • by Pradip Gosain",
-                                foreground="gray")
+        self.status = ttk.Label(
+            btns, text=f"Offline • v{ENGINE_VERSION} • by Pradip Gosain",
+            foreground="gray")
         self.status.pack(side="right", padx=4)
 
     def _set_status(self, msg):
@@ -186,7 +190,12 @@ class App(tk.Tk):
         if self.google_var.get():
             words = text.split()
             last = words[-1] if words else ""
-            if last:
+            # Throttle: at most one in-flight fetch per 0.6s; the seq
+            # guard drops anything stale. (Cached words return instantly.)
+            now = time.monotonic()
+            if last and (last in self._gcache or
+                         now - self._last_gfetch >= 0.6):
+                self._last_gfetch = now
                 self._seq += 1
                 threading.Thread(target=self._fetch_google,
                                  args=(self._seq, last, list(suggs)),

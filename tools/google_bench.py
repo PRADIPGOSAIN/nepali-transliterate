@@ -19,7 +19,10 @@ import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from core.nepali_transl import transliterate, get_transliterator
+import tempfile
+# Isolate the user lexicon: learned words must not skew agreement numbers.
+os.environ["NEPALI_TRANSL_HOME"] = tempfile.mkdtemp(prefix="google-bench-")
+from core.nepali_transl import transliterate
 from core.dictionary import WORD_CORRECTIONS
 from core.google_backend import google_transliterate
 

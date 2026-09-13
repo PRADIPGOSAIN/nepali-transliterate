@@ -51,17 +51,9 @@ def build_kmn() -> str:
     A("store(&COPYRIGHT) 'GPL-2.0-or-later'")
     A("store(&MESSAGE) 'Romanized Nepali: type namaste -> \\U0928\\U092E\\U0938\\U094D\\U0924\\U0947'")
     A("store(&TARGETS) 'any'")
-    A("store(&LANGUAGE) 'ne'")
+    A("c (language is declared in the .kps package file, not here)")
     A("")
-    # --- consonants that can take a matra (single output char only) ---
-    matra_cons = sorted({v for v in CONSONANT_MAP.values() if len(v) == 1})
-    A("c Consonants accepting matras")
-    A("store(consonant) " + " ".join(f"'{kmn_escape(c)}'" for c in matra_cons))
-    # --- vowel keys + parallel matra outputs (longest first for any() match) ---
-    vkeys = sorted(DEPENDENT_VOWELS.keys(), key=len, reverse=True)
-    A("c Vowel keys (any() longest-match) and their matras")
-    A("store(vowelkey) " + " ".join(f"'{kmn_escape(k)}'" for k in vkeys))
-    A("store(vowelmat) " + " ".join(f"'{kmn_escape(DEPENDENT_VOWELS[k])}'" for k in vkeys))
+    A("c (plain rules only: no stores needed)")
     A("")
     A("begin Unicode > use(main)")
     A("")
@@ -72,8 +64,19 @@ def build_kmn() -> str:
         if len(k) > 1:
             A(f"  + '{kmn_escape(k)}' > '{kmn_escape(CONSONANT_MAP[k])}'")
     A("")
-    A("c --- 2. consonant + vowel -> consonant + matra ---")
-    A("  + any(consonant) + any(vowelkey) > index(vowelmat, 2)")
+    A("c --- 2. consonant key + vowel key -> consonant + matra ---")
+    A("c Explicit per-combination rules (context elements SPACE-separated).")
+    A("c any()+index() for the SECOND position is rejected by kmc (KM02032),")
+    A("c so every combination is spelled out. No cluster key ends in a")
+    A("c vowel key, so these never collide with section 1.")
+    for ck in sorted(CONSONANT_MAP.keys(), key=len, reverse=True):
+        c = CONSONANT_MAP[ck]
+        for vk in sorted(DEPENDENT_VOWELS.keys(), key=len, reverse=True):
+            if vk == "a":
+                A(f"  + '{kmn_escape(ck)}' 'a' > '{kmn_escape(c)}'")
+            else:
+                A(f"  + '{kmn_escape(ck)}' '{kmn_escape(vk)}' > "
+                  f"'{kmn_escape(c + DEPENDENT_VOWELS[vk])}'")
     A("")
     A("c --- 3. single consonants ---")
     for k in sorted(CONSONANT_MAP.keys(), key=len, reverse=True):
@@ -89,9 +92,8 @@ def build_kmn() -> str:
         A(f"  + '{kmn_escape(k)}' > '{kmn_escape(NUMBERS[k])}'")
     A("")
     A("c --- 6. punctuation / signs ---")
-    A("c word-start M/N act as consonants (mirrors the Python engine)")
-    A("  + nul + 'M' > 'म'")
-    A("  + nul + 'N' > 'न'")
+    A("c NOTE: M/N are always anusvara here (mim-faithful). Type lowercase")
+    A("c m/n at word start for म/न. (kmc rejects nul in this position.)")
     A(f"  + '..' > '{kmn_escape(PUNNA_VIRAM['..'])}'")
     A(f"  + '.' > '{kmn_escape(PUNNA_VIRAM['.'])}'")
     A(f"  + '~a' > '{kmn_escape(PUNNA_VIRAM['~a'])}'")
@@ -108,10 +110,24 @@ def check_coverage() -> list:
     """Every mapping key must appear in the generated source."""
     src = build_kmn()
     missing = []
-    for table in (CONSONANT_MAP, INDEPENDENT_VOWELS, NUMBERS):
+    for table in (CONSONANT_MAP, INDEPENDENT_VOWELS, NUMBERS,
+                  ANUSWAR, PUNNA_VIRAM):
         for k in table:
             if f"'{kmn_escape(k)}'" not in src:
                 missing.append(k)
+    # Every consonant key must have its inherent-'a' re-emit rule.
+    for k in CONSONANT_MAP:
+        c = CONSONANT_MAP[k]
+        if f"+ '{kmn_escape(k)}' 'a' > '{kmn_escape(c)}'" not in src:
+            missing.append(k + "+a")
+    # Every consonant key x vowel matra combo must exist.
+    for k in CONSONANT_MAP:
+        c = CONSONANT_MAP[k]
+        for vk, matra in DEPENDENT_VOWELS.items():
+            if vk == "a":
+                continue
+            if f"+ '{kmn_escape(k)}' '{kmn_escape(vk)}'" not in src:
+                missing.append(f"{k}+{vk}")
     return missing
 
 

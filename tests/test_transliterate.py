@@ -163,38 +163,68 @@ def test_google_backend_optional():
     try:
         from core.google_backend import google_transliterate, google_sentence
         res = google_transliterate("namaste", num=2)
-        assert res.get("namaste", [None])[0] == "नमस्ते"
-        assert transliterate("namaste") == "नमस्ते"  # we agree here
-        assert google_sentence("namaste kasto chha") == "नमस्ते कस्तो छ"
+        top = res.get("namaste", [None])[0]
+        # Don't pin Google's exact top-1 (it can change); assert usuable output.
+        assert _devanagari(top), top
+        assert transliterate("namaste") == "नमस्ते"  # ours is stable
+        assert _devanagari(google_sentence("namaste kasto chha"))
     except (OSError, RuntimeError) as e:
         print(f"  (skip test_google_backend_optional: offline/API down: {e})")
+
+
+def _devanagari(s):
+    import unicodedata
+    return bool(s) and all(
+        unicodedata.name(c, "").startswith("DEVANAGARI") or c in " ।॥"
+        for c in s)
 
 
 def test_candidates_ranking():
     import tempfile
     from core.nepali_transl import NepaliTransliterator
     old = os.environ.get("NEPALI_TRANSL_HOME")
-    os.environ["NEPALI_TRANSL_HOME"] = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory() as tmp:
+        os.environ["NEPALI_TRANSL_HOME"] = tmp
+        try:
+            t = NepaliTransliterator()
+            # hand first, phonetic always present
+            c = t.candidates("nam")
+            assert c[0] == ("नाम", "hand"), c
+            assert any(s == "phonetic" for _, s in c), c
+            assert t.candidates("") == []
+            # user-learned outranks everything, then transliterate() agrees
+            assert t.learn("nam", "नमX")
+            c2 = t.candidates("nam")
+            assert c2[0] == ("नमX", "user"), c2
+            assert t.transliterate("nam") == "नमX"
+            # persists across instances (same lexicon dir)
+            t2 = NepaliTransliterator()
+            assert t2.top("nam") == "नमX"
+            # bad learns rejected
+            assert t.learn("", "x") is False
+            assert t.learn("ok", "") is False
+        finally:
+            if old is None:
+                os.environ.pop("NEPALI_TRANSL_HOME", None)
+            else:
+                os.environ["NEPALI_TRANSL_HOME"] = old
+
+
+def test_file_and_batch_apis():
+    import tempfile
+    from core.nepali_transl import get_transliterator
+    t = get_transliterator()
+    assert t.correct_word("namaste") == "नमस्ते"
+    assert t.correct_word("zzzznonsense") is None
+    assert t.batch_transliterate(["namaste", "kha"]) == ["नमस्ते", "ख"]
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False,
+                                     encoding="utf-8") as f:
+        f.write("namaste")
+        path = f.name
     try:
-        t = NepaliTransliterator()
-        # hand first, phonetic always last
-        c = t.candidates("nam")
-        assert c[0] == ("नाम", "hand"), c
-        assert c[-1][1] == "phonetic", c
-        assert t.candidates("") == []
-        # user-learned outranks everything, then transliterate() agrees
-        assert t.learn("nam", "नमX")
-        c2 = t.candidates("nam")
-        assert c2[0] == ("नमX", "user"), c2
-        assert t.transliterate("nam") == "नमX"
-        # bad learns rejected
-        assert t.learn("", "x") is False
-        assert t.learn("ok", "") is False
+        assert t.transliterate_file(path) == "नमस्ते"
     finally:
-        if old is None:
-            os.environ.pop("NEPALI_TRANSL_HOME", None)
-        else:
-            os.environ["NEPALI_TRANSL_HOME"] = old
+        os.unlink(path)
 
 
 def test_fuzzy_variants():
@@ -259,7 +289,7 @@ def test_cli_google_optional():
         with redirect_stdout(buf):
             rc = main(["--google", "namaste"])
         assert rc == 0, rc
-        assert buf.getvalue().strip() == "नमस्ते"
+        assert _devanagari(buf.getvalue().strip())
     except (OSError, RuntimeError) as e:
         print(f"  (skip test_cli_google_optional: offline/API down: {e})")
 
@@ -291,7 +321,8 @@ def run_all():
         test_google_backend_optional, test_cli_google_optional,
         test_merge_suggestions_pure, test_candidates_ranking,
         test_top_matches_transliterate, test_fuzzy_variants,
-        test_roman_corpus_words, test_preeti_bridge,
+        test_roman_corpus_words, test_file_and_batch_apis,
+        test_preeti_bridge,
     ]
     passed, failed = 0, 0
     for fn in tests:

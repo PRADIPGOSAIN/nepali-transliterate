@@ -3,11 +3,9 @@ nepali-transl - Modern Nepali Roman Transliteration Engine
 Based on the ne-rom-translit.mim input method (m17n database)
 """
 
-import re
 import json
 import os
 from typing import Optional, Tuple, List, Dict
-from pathlib import Path
 
 try:
     from .dictionary import WORD_CORRECTIONS, SUGGESTION_WORDS
@@ -134,9 +132,8 @@ def _deschwa_key(key: str) -> str:
 class NepaliTransliterator:
     """Converts romanized Nepali text to Devanagari Unicode using state machine."""
 
-    def __init__(self, dict_path: Optional[str] = None):
+    def __init__(self):
         self._load_mappings()
-        self._dict_path = dict_path or str(Path(__file__).parent / "dictionary.db")
         self._dictionary = self._load_dictionary()
 
     def _load_mappings(self):
@@ -263,8 +260,9 @@ class NepaliTransliterator:
         is meaningful (trailing M = anusvara, m = consonant).
         """
         key = (word or "").strip().lower()
-        if not key:
-            return []
+        if not key or any(ch.isspace() for ch in key):
+            return []  # contract: single word only (phrases: use top())
+        word = (word or "").strip()  # keep original case for phonetics
         out: List[Tuple[str, str]] = []
         seen = set()
 
@@ -299,8 +297,10 @@ class NepaliTransliterator:
     def candidates(self, word: str) -> List[Tuple[str, str]]:
         """Ranked Devanagari candidates for one romanized word.
 
-        Sources vote in priority order; first occurrence wins, order kept:
-          user > stem > hand > auto > fuzzy > deschwa > phonetic.
+        Contract: SINGLE word only (returns [] for phrases/empty; use
+        top()/transliterate() for those). First entry is ALWAYS the
+        top-1 transliterate() output; after it come fuzzy/deschwa
+        alternates, then the phonetic reading if not already shown.
         The phonetic form is ALWAYS present (last resort).
         """
         return self._ranked(word)
@@ -368,7 +368,6 @@ class NepaliTransliterator:
 
         result = []
         i = 0
-        pending_halant = False
         pending_consonant: Optional[str] = None
 
         while i < len(word):
@@ -464,20 +463,11 @@ class NepaliTransliterator:
                 i += consumed
                 continue
 
-            # Try to match dependent vowel (matra)
-            matra_match = self._match_dependent_vowel(word, i)
-            if matra_match:
-                matched_str, nepali_char, consumed = matra_match
-
-                if pending_consonant:
-                    result.append(pending_consonant + nepali_char)
-                    pending_consonant = None
-                else:
-                    # Standalone matra - unlikely but handle gracefully
-                    result.append(nepali_char)
-
-                i += consumed
-                continue
+            # NOTE: there is intentionally no separate dependent-vowel
+            # (matra) branch here: every matra key is also an independent
+            # key, so the branch above always matches first and applies
+            # the matra via DEPENDENT_VOWELS. (_match_dependent_vowel is
+            # kept for external/test use.)
 
             # Explicit halant forms (from mim: "\\"->halant+ZWNJ, "|"->ZWNJ+halant+ZWJ)
             if word[i] == '\\' or word[i] == '|':
