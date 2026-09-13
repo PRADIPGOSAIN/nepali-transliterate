@@ -26,6 +26,7 @@ No accounts. No cloud. No tracking. Your keystrokes never leave your machine.
 - [Preeti rescue](#preeti-rescue)
 - [Project layout & tests](#project-layout--tests)
 - [License](#license)
+- [Platform support](SUPPORT.md)
 
 ## Run it in 60 seconds
 
