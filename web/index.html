@@ -40,11 +40,14 @@
 </head>
 <body>
 <h1>नेपाली Transliterate</h1>
-<p class="hint">Two independent offline modes. <b>Romanized:</b> type
-  <kbd>namaste kasto chha</kbd> → <b>नमस्ते कस्तो छ</b>.
-  <b>Traditional:</b> type with Nepali-keyboard habit (<kbd>k</kbd>→प,
-  <kbd>f</kbd>→ा). Based on
-  <a href="https://github.com/sapradhan/ne-rom-translit">ne-rom-translit</a>.</p>
+<div id="staleBanner" style="display:none;background:#e74c3c;color:#fff;
+     padding:10px;border-radius:6px;margin-bottom:12px;font-weight:bold"></div>
+<p class="hint"><b>4 offline modes + Google.</b>
+  <b>Translit:</b> <kbd>namaste</kbd> → <b>नमस्ते</b>.
+  <b>Traditional:</b> <kbd>k</kbd>→प <kbd>f</kbd>→ा.
+  <b>Trad-rev:</b> <kbd>S</kbd>→क्. <b>Romanized:</b> <kbd>k</kbd>→क.
+  Tick <b>⌨️ Typewriter</b> and Nepali forms live while you type.
+  Based on <a href="https://github.com/sapradhan/ne-rom-translit">ne-rom-translit</a>.</p>
 
 <div class="box">
   <label><b>Layout:</b></label>
@@ -187,10 +190,21 @@ romanEl.addEventListener('input', () => {
   if (slow) t = setTimeout(update, 400);
   else update();
 });
+const EXPECTED_ENGINE = '0.8.2';
 fetch('/api/health').then(r => r.json()).then(d => {
-  document.getElementById('verSpan').textContent = 'engine v' + d.version +
-    ' — if words look outdated, restart server after git pull';
-}).catch(() => {});
+  const ver = d.version || 'OLD (no version)';
+  document.getElementById('verSpan').textContent = 'engine v' + ver;
+  if (ver !== EXPECTED_ENGINE) {
+    const b = document.getElementById('staleBanner');
+    b.style.display = 'block';
+    b.textContent = '⚠️ Server is outdated (engine v' + ver +
+      ', page wants v' + EXPECTED_ENGINE +
+      '). Stop it (Ctrl+C), run: git pull — then start again: ' +
+      'python3 web/app.py';
+  }
+}).catch(() => {
+  document.getElementById('verSpan').textContent = 'engine unreachable';
+});
 
 /* ---- visual keyboard ---- */
 let vkData = null, vkLayout = 'traditional';
