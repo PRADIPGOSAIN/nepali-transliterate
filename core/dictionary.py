@@ -299,6 +299,17 @@ WORD_CORRECTIONS = {
     'tapaiharu': 'तपाईंहरू',
     'kun': 'कुन',
     'pardip': 'प्रदिप',
+    # everyday words no dictionary knew (phonetic fallback mangled them)
+    'chiya': 'चिया',
+    'dhido': 'ढिँडो',
+    'boudha': 'बौद्ध',
+    'baudha': 'बौद्ध',
+    'syambhu': 'स्वयम्भू',
+    'swayambhu': 'स्वयम्भू',
+    'biskut': 'बिस्कुट',
+    'selroti': 'सेलरोटी',
+    'chautari': 'चौतारी',
+    'khursani': 'खुर्सानी',
 }
 
 # Suggestion wordlist (romanized forms for autocomplete)

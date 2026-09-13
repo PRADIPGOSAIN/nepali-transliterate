@@ -335,6 +335,17 @@ def test_fuzzy_variants():
     assert t.transliterate("nepaal") == "नेपाल"
 
 
+def test_phonetic_never_dead_ends():
+    # m17n parity principle: ANY input produces output, dictionary or not.
+    # Unknown words fall back to phonetics (same tables as m17n).
+    t = get_transliterator()
+    for w in ["xyzzy", "bhatmase", "qwerty", "thamel", "momo", "kalam",
+              "MERO", "test123", "a-b"]:
+        out = t.transliterate(w)
+        assert isinstance(out, str) and len(out) > 0, w
+        assert t.candidates(w), w  # always at least the phonetic form
+
+
 def test_roman_corpus_words():
     # frequent real typed forms from Nepali-Flow-Roman
     assert transliterate("xa") == "छ"
@@ -412,7 +423,8 @@ def run_all():
         test_google_backend_optional, test_cli_google_optional,
         test_merge_suggestions_pure, test_candidates_ranking,
         test_top_matches_transliterate, test_fuzzy_variants,
-        test_roman_corpus_words, test_file_and_batch_apis,
+        test_roman_corpus_words, test_phonetic_never_dead_ends,
+        test_file_and_batch_apis,
         test_document_punctuation, test_decimal_numbers,
         test_latin_passthrough, test_suffix_composition,
         test_official_words, test_official_essay_lines,
