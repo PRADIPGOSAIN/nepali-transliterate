@@ -72,6 +72,7 @@
   <textarea id="roman" placeholder="namaste..."></textarea>
   <div id="live" class="hint" style="margin:4px 0;min-height:1.2em"></div>
   <div id="suggest"></div>
+  <div id="forms" style="margin-top:4px"></div>
 </div>
 
 <div class="box">
@@ -166,6 +167,7 @@ async function update() {
     dot.style.background = '#e74c3c';
     setTimeout(() => { dot.style.background = '#2ecc71'; }, 120);
     sugEl.innerHTML = '';
+    renderForms(d.forms || []);
     (d.suggestions || []).forEach(s => {
       const b = document.createElement('button');
       b.textContent = s;
@@ -257,6 +259,49 @@ function renderVk() {
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
+}
+
+/* ---- ranked Devanagari forms for the last word ----
+   First form = current top-1. Clicking any OTHER form commits it AND
+   teaches it to your local install (stored on your disk only). */
+function renderForms(forms) {
+  const box = document.getElementById('forms');
+  box.innerHTML = '';
+  if (!forms.length || currentMode() !== 'roman') return;
+  const label = document.createElement('span');
+  label.className = 'hint';
+  label.textContent = 'forms: ';
+  box.appendChild(label);
+  forms.forEach((it, idx) => {
+    const b = document.createElement('button');
+    b.style.cssText = 'margin:4px;padding:6px 12px;font-size:16px;border:1px solid #1a5276;' +
+      (idx === 0 ? 'background:#1a5276;color:#fff;' : 'background:#eaf2f8;color:#1a5276;') +
+      'border-radius:20px;cursor:pointer;';
+    b.textContent = it.form + ' (' + it.source + ')';
+    b.title = idx === 0 ? 'current top choice'
+      : 'use this form (and remember my choice on this device)';
+    b.onclick = () => commitForm(it, idx);
+    box.appendChild(b);
+  });
+}
+async function commitForm(it, idx) {
+  // Clicking a non-top form = explicit preference: learn it locally so it
+  // ranks first next time. (Top choice needs no learning.)
+  if (idx > 0) {
+    try {
+      await fetch('/api/learn', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({roman: it.roman, devanagari: it.form})
+      });
+    } catch (e) { /* server learn failed: commit still applies below */ }
+  }
+  const words = romanEl.value.split(/\s+/);
+  words[words.length - 1] = it.form;
+  romanEl.value = words.join(' ') + ' ';
+  lastCommit = null;
+  updateLive();
+  update();
 }
 
 /* ---- typewriter (IME) mode: Nepali forms live, in this same box ----

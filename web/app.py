@@ -110,6 +110,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/learn":
+            # Remember a user's explicit choice locally (never leaves disk).
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                data = json.loads(self.rfile.read(length) or b"{}")
+            except json.JSONDecodeError:
+                data = {}
+            roman = data.get("roman", "")
+            devanagari = data.get("devanagari", "")
+            if not isinstance(roman, str):
+                roman = ""
+            if not isinstance(devanagari, str):
+                devanagari = ""
+            ok = TR.learn(roman, devanagari)
+            self._send(200, json.dumps({"ok": ok}).encode(),
+                       "application/json")
+            return
         if path == "/api/transliterate":
             length = int(self.headers.get("Content-Length", 0))
             try:
@@ -124,7 +141,7 @@ class Handler(BaseHTTPRequestHandler):
                 mode = "roman"
             want_google = bool(data.get("google_suggest"))
             if mode != "roman":
-                result, suggestions = TR.transliterate(text, mode=mode), []
+                result, suggestions, forms = TR.transliterate(text, mode=mode), [], []
             else:
                 result, suggestions = TR.transliterate_with_suggestions(text)
                 if want_google:
@@ -134,8 +151,15 @@ class Handler(BaseHTTPRequestHandler):
                     last = words[-1] if words else ""
                     suggestions = merge_suggestions(
                         suggestions, _google_suggest_word(last))
+                # Ranked Devanagari forms for the last word:
+                # [user-learned, hand, auto, phonetic] with sources.
+                words = text.split()
+                last = words[-1] if words else ""
+                forms = [{"form": f, "source": s, "roman": last}
+                         for f, s in TR.candidates(last)[:5]] if last else []
             payload = json.dumps(
-                {"result": result, "suggestions": suggestions, "mode": mode},
+                {"result": result, "suggestions": suggestions, "mode": mode,
+                 "forms": forms},
                 ensure_ascii=False,
             ).encode("utf-8")
             self._send(200, payload, "application/json; charset=utf-8")

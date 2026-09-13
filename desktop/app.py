@@ -126,6 +126,8 @@ class App(tk.Tk):
 
         self.sugg_frame = ttk.Frame(self)
         self.sugg_frame.pack(fill="x", **pad)
+        self.forms_frame = ttk.Frame(self)
+        self.forms_frame.pack(fill="x", **pad)
 
         ttk.Label(self, text="नेपाली Unicode output:").pack(anchor="w", **pad)
         self.out = tk.Text(self, height=7, wrap="word",
@@ -162,12 +164,14 @@ class App(tk.Tk):
         if not text:
             self.out.delete("1.0", "end")
             self._show_suggestions([])
+            self._show_forms([])
             return
         if mode != "roman":
             # Direct key mapping: no phonetics, no dictionary.
             self.out.delete("1.0", "end")
             self.out.insert("1.0", TR.transliterate(text, mode=mode))
             self._show_suggestions([])
+            self._show_forms([])
             return
         # Roman mode: render OFFLINE result instantly (never block the UI),
         # then enrich suggestions with Google in a background thread.
@@ -175,6 +179,10 @@ class App(tk.Tk):
         self.out.delete("1.0", "end")
         self.out.insert("1.0", result)
         self._show_suggestions(suggs)
+        words = text.split()
+        last = words[-1] if words else ""
+        self._show_forms([(f, s, last) for f, s in TR.candidates(last)[:5]]
+                         if last else [])
         if self.google_var.get():
             words = text.split()
             last = words[-1] if words else ""
@@ -217,6 +225,30 @@ class App(tk.Tk):
             ttk.Button(self.sugg_frame, text=s,
                        command=lambda v=s: self._apply_suggestion(v)).pack(side="left", padx=3)
 
+    def _show_forms(self, forms):
+        """Ranked Devanagari forms for the last word, with sources."""
+        for w in self.forms_frame.winfo_children():
+            w.destroy()
+        if not forms:
+            return
+        ttk.Label(self.forms_frame, text="forms:").pack(side="left", padx=3)
+        for idx, (form, source, roman) in enumerate(forms):
+            ttk.Button(self.forms_frame, text=f"{form} ({source})",
+                       command=lambda f=form, r=roman, i=idx:
+                           self._commit_form(f, r, i)).pack(side="left", padx=3)
+
+    def _commit_form(self, form, roman, idx):
+        # Non-top choice = explicit preference: learn locally first.
+        if idx > 0 and not TR.learn(roman, form):
+            messagebox.showwarning("Learn", "Could not save choice locally; "
+                                            "using it just this once.")
+        content = self.roman.get("1.0", "end").strip().split()
+        if content:
+            content[-1] = form
+            self.roman.delete("1.0", "end")
+            self.roman.insert("1.0", " ".join(content) + " ")
+            self._update()
+
     def _apply_suggestion(self, word):
         content = self.roman.get("1.0", "end").strip().split()
         if content:
@@ -237,6 +269,7 @@ class App(tk.Tk):
         self.roman.delete("1.0", "end")
         self.out.delete("1.0", "end")
         self._show_suggestions([])
+        self._show_forms([])
 
 
 if __name__ == "__main__":

@@ -30,7 +30,22 @@ def main(argv=None):
     ap.add_argument("--google", action="store_true",
                     help="Use Google Input Tools API instead of the offline "
                          "engine (needs internet; roman text only)")
+    ap.add_argument("--cands", metavar="WORD",
+                    help="List ranked Devanagari candidates for one word "
+                         "with their sources (user/hand/auto/phonetic)")
+    ap.add_argument("--learn", nargs=2, metavar=("ROMAN", "DEVANAGARI"),
+                    help="Remember ROMAN->DEVANAGARI locally (user lexicon)")
     args = ap.parse_args(argv)
+
+    tr = get_transliterator()
+    if args.learn:
+        ok = tr.learn(args.learn[0], args.learn[1])
+        print("remembered" if ok else "not stored (check inputs)")
+        return 0 if ok else 1
+    if args.cands:
+        for form, source in tr.candidates(args.cands):
+            print(f"{form}\t({source})")
+        return 0
 
     if args.text is not None:
         source = args.text
@@ -44,6 +59,9 @@ def main(argv=None):
         from core.preeti_bridge import preeti_to_unicode
         result = preeti_to_unicode(source)
     elif args.google:
+        if args.layout != "roman":
+            print("note: --google uses roman transliteration; "
+                  "--layout ignored.", file=sys.stderr)
         from core.google_backend import google_sentence
         try:
             result = google_sentence(source)

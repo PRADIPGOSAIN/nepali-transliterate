@@ -34,27 +34,25 @@ def load_rows(paths):
     return rows
 
 
-def main(argv):
-    paths = argv[1:] or ["/tmp/nep_valid.json", "/tmp/nep_test.json"]
-    rows = load_rows(paths)
-    print(f"loaded {len(rows)} pairs")
+SRC_RANK = {"AK-Freq": 0, "AK-Uni": 1, "Wikidata": 2, "IndicCorp": 3}
 
-    scores = [r["score"] for r in rows
-                if isinstance(r.get("score"), (int, float))]
-    if scores:
-        print(f"score range: {min(scores):.3f} .. {max(scores):.3f}")
 
-    # Source priority: curated frequency lists first, mined data fills gaps.
-    SRC_RANK = {"AK-Freq": 0, "AK-Uni": 1, "Wikidata": 2, "IndicCorp": 3}
+def _score(v):
+    return v if isinstance(v, (int, float)) else -999.0
 
-    def _score(v):
-        return v if isinstance(v, (int, float)) else -999.0
 
-    def _rank(r):
-        return (SRC_RANK.get(r.get("source"), 9), -_score(r.get("score")))
+def _rank(r):
+    return (SRC_RANK.get(r.get("source"), 9), -_score(r.get("score")))
 
+
+def build_auto(rows):
+    """Build {roman: native} corrections from pair rows.
+
+    Same rules everywhere (import + honest eval share this): curated
+    sources first, phonetic-owned keys stay phonetic, hand entries win,
+    first collision wins. Returns (auto_dict, stats).
+    """
     rows = sorted(rows, key=_rank)
-
     tr = NepaliTransliterator()
     auto = OrderedDict()
     stats = {"total": len(rows), "phonetic_ok": 0, "hand_covered": 0,
@@ -97,7 +95,20 @@ def main(argv):
             continue  # rows pre-sorted: first wins (curated first)
         auto[key] = (native, _score(r.get("score")))
         stats["imported"] += 1
+    return auto, stats
 
+
+def main(argv):
+    paths = argv[1:] or ["/tmp/nep_valid.json", "/tmp/nep_test.json"]
+    rows = load_rows(paths)
+    print(f"loaded {len(rows)} pairs")
+
+    scores = [r["score"] for r in rows
+                if isinstance(r.get("score"), (int, float))]
+    if scores:
+        print(f"score range: {min(scores):.3f} .. {max(scores):.3f}")
+
+    auto, stats = build_auto(rows)
     print("stats:", stats)
 
     out_path = os.path.join(ROOT, "core", "words_auto.py")

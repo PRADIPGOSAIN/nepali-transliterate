@@ -2,16 +2,20 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-36%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-39%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
-**Type Nepali everywhere — offline, on any OS.** An independent,
-zero-dependency toolkit by **Pradip Gosain**: phonetic transliteration
-(`namaste` → नमस्ते), three direct keyboard layouts, a visual keyboard
-for learning, desktop + web apps, a 6,220-word dictionary, Keyman
-sources for system-wide typing, and a Preeti rescue bridge.
+**Offline Nepali typing toolkit with roman transliteration, traditional
+keyboard layouts, and Linux system-wide input support.** By **Pradip Gosain**.
 
-No accounts. No cloud. No tracking. Your keystrokes never leave your machine.
+Phonetic transliteration (`namaste` → नमस्ते), three direct keyboard
+layouts, a visual keyboard for learning, desktop + web apps, a 6,220-word
+dictionary, candidate ranking with personal learning, Keyman sources,
+and a Preeti rescue bridge.
+
+No accounts. No cloud. No tracking. Your keystrokes never leave your
+machine. Windows/macOS/mobile system-wide input: in development
+(see [Platform support](SUPPORT.md)).
 
 ## Contents
 
@@ -174,7 +178,16 @@ Type directly into Word, browsers, chat — any application:
   only pairs the engine can't derive, taken from real human romanizations
   ([Nepali-Roman-Transliteration](https://huggingface.co/datasets/Saugatkafley/Nepali-Roman-Transliteration),
   MIT). Regenerate: `python3 tools/import_pairs.py nep_valid.json nep_test.json`.
-- **Measured: 99.5% correct on 6,905 real typed pairs.**
+- **Ranked candidates + personal learning** — every word offers all its
+  forms with sources (`user > hand > auto > phonetic`); the phonetic
+  form is always present. Picking a non-top form teaches your install
+  (`~/.config/nepali-transliterate/user.json`, never uploaded).
+  CLI: `python3 -m core.cli --cands nam`.
+- **Honest accuracy, not inflated**: the dictionary *memorizes* its
+  training pairs (99.5% recall there). On never-seen pairs (seeded
+  50/50 split, `python3 tools/eval_split.py`) phonetic rules score
+  **~11% top-1 overall, ~14% on frequent words** — ambiguous spellings
+  keep every candidate instead of guessing wrong.
 - Suggestions while typing, shortest-first ranked.
 
 ## Google Input Tools — merged into suggestions
@@ -232,7 +245,7 @@ tests/                 33 tests, stdlib only
 ```
 
 ```bash
-python3 tests/test_transliterate.py   # 23 — engine, dict, Preeti, Google
+python3 tests/test_transliterate.py   # 26 — engine, dict, candidates, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 ```

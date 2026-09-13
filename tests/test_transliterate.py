@@ -168,6 +168,42 @@ def test_google_backend_optional():
         print(f"  (skip test_google_backend_optional: offline/API down: {e})")
 
 
+def test_candidates_ranking():
+    import tempfile
+    from core.nepali_transl import NepaliTransliterator
+    old = os.environ.get("NEPALI_TRANSL_HOME")
+    os.environ["NEPALI_TRANSL_HOME"] = tempfile.mkdtemp()
+    try:
+        t = NepaliTransliterator()
+        # hand first, phonetic always last
+        c = t.candidates("nam")
+        assert c[0] == ("नाम", "hand"), c
+        assert c[-1][1] == "phonetic", c
+        assert t.candidates("") == []
+        # user-learned outranks everything, then transliterate() agrees
+        assert t.learn("nam", "नमX")
+        c2 = t.candidates("nam")
+        assert c2[0] == ("नमX", "user"), c2
+        assert t.transliterate("nam") == "नमX"
+        # bad learns rejected
+        assert t.learn("", "x") is False
+        assert t.learn("ok", "") is False
+    finally:
+        if old is None:
+            os.environ.pop("NEPALI_TRANSL_HOME", None)
+        else:
+            os.environ["NEPALI_TRANSL_HOME"] = old
+
+
+def test_top_matches_transliterate():
+    from core.nepali_transl import get_transliterator
+    t = get_transliterator()
+    sample = ["namaste", "sangaM", "sangam", "aM", "kaki", "kathmandu",
+              "nepal", "rri", "hello world", "timi kasto chha"]
+    for w in sample:
+        assert t.top(w) == t.transliterate(w), w
+
+
 def test_merge_suggestions_pure():
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "web"))
@@ -220,7 +256,8 @@ def run_all():
         test_sentence_probes,
         test_suggestions_ranked, test_auto_dictionary_quality,
         test_google_backend_optional, test_cli_google_optional,
-        test_merge_suggestions_pure, test_preeti_bridge,
+        test_merge_suggestions_pure, test_candidates_ranking,
+        test_top_matches_transliterate, test_preeti_bridge,
     ]
     passed, failed = 0, 0
     for fn in tests:

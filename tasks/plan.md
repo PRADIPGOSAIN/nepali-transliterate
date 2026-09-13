@@ -160,6 +160,20 @@ and verified by tests.
 
 ### Checkpoint: Typewriter — DONE (23+7+6 = 36 green)
 
+## Phase 12: Honest eval + candidates architecture — DONE (v0.9.0)
+- Data hunt: nep_train.json (2.4M rows, 99.7% IndicCorp) downloaded+analyzed;
+  Dakshina rejected (2GB, CC-BY-SA); liblekhika autocorrect (19 rules, one
+  idea already covered). Bulk import rejected: bloat + noise, no frequencies.
+- `tools/eval_split.py`: seeded 50/50 held-out eval. Phonetics ≈11% top-1
+  (14% frequent words); dict memorizes (99.5% train recall). Published as-is.
+- `candidates()` API: user > hand > auto > phonetic, phonetic always present,
+  case-safe, top()==transliterate() invariant proven over 631 words.
+- Local user lexicon (~/.config, NEPALI_TRANSL_HOME-overridable, learn API);
+  non-top picks auto-learn in web/desktop; CLI --cands/--learn.
+- README honesty pass (headline, numbers, limits).
+
+### Checkpoint: Candidates — DONE (26+7+6 = 39 green)
+
 ## Still open (needs your machines)
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.

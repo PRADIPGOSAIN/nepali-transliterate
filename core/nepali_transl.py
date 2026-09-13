@@ -121,7 +121,112 @@ class NepaliTransliterator:
     def correct_word(self, word: str) -> Optional[str]:
         """Return dictionary correction for a word, if known."""
         key = word.lower()
-        return WORD_CORRECTIONS.get(key, AUTO_CORRECTIONS.get(key))
+        user = self._user_lexicon()
+        return user.get(key, WORD_CORRECTIONS.get(
+            key, AUTO_CORRECTIONS.get(key)))
+
+    # ---- user lexicon (local learning, never shipped) ----
+
+    @staticmethod
+    def _lexicon_path() -> str:
+        base = os.environ.get("NEPALI_TRANSL_HOME")
+        if not base:
+            base = os.path.join(os.path.expanduser("~"), ".config",
+                                "nepali-transliterate")
+        return os.path.join(base, "user.json")
+
+    def _user_lexicon(self) -> Dict[str, str]:
+        """Per-user learned mappings {roman: devanagari} ({} if none)."""
+        if hasattr(self, "_user_cache"):
+            return self._user_cache
+        self._user_cache = {}
+        try:
+            with open(self._lexicon_path(), encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                self._user_cache = {str(k).lower(): str(v)
+                                    for k, v in data.items()}
+        except (OSError, ValueError):
+            pass
+        return self._user_cache
+
+    def learn(self, roman: str, devanagari: str) -> bool:
+        """Remember a user's choice locally. Returns True if stored."""
+        roman = (roman or "").strip().lower()
+        devanagari = (devanagari or "").strip()
+        if not roman or not devanagari or len(roman) > 40:
+            return False
+        lex = self._user_lexicon()
+        if lex.get(roman) == devanagari:
+            return True  # already known
+        lex[roman] = devanagari
+        try:
+            os.makedirs(os.path.dirname(self._lexicon_path()), exist_ok=True)
+            with open(self._lexicon_path(), "w", encoding="utf-8") as f:
+                json.dump(lex, f, ensure_ascii=False, indent=1,
+                          sort_keys=True)
+        except OSError:
+            return False
+        return True
+
+    def _stem_mark(self, word: str) -> Optional[Tuple[str, str]]:
+        """Trailing M/N/H/* applied to a resolvable stem (single level).
+
+        Returns (form, origin-source) or None. Origin mirrors the stem's
+        own source so ranking stays truthful.
+        """
+        if len(word) <= 1 or word[-1] not in ANUSWAR:
+            return None
+        stem_key = word[:-1].lower()
+        if not stem_key or stem_key[-1:] in ANUSWAR:
+            return None  # no chained stems (sangaMM etc.)
+        user = self._user_lexicon()
+        if stem_key in user:
+            return user[stem_key] + ANUSWAR[word[-1]], "user"
+        if stem_key in WORD_CORRECTIONS:
+            return WORD_CORRECTIONS[stem_key] + ANUSWAR[word[-1]], "hand"
+        if stem_key in AUTO_CORRECTIONS:
+            return AUTO_CORRECTIONS[stem_key] + ANUSWAR[word[-1]], "auto"
+        return None
+
+    # ---- candidate generation + ranking ----
+
+    def candidates(self, word: str) -> List[Tuple[str, str]]:
+        """Ranked Devanagari candidates for one romanized word.
+
+        Sources vote in priority order; first occurrence wins, order kept:
+          user lexicon > hand dictionary > auto dictionary > phonetics.
+        The phonetic form is ALWAYS present (last resort). Returns
+        [(form, source)] with source in {user, hand, auto, phonetic}.
+        """
+        key = (word or "").strip().lower()
+        if not key:
+            return []
+        out: List[Tuple[str, str]] = []
+        seen = set()
+
+        def add(form, source):
+            if form and form not in seen:
+                seen.add(form)
+                out.append((form, source))
+
+        # Mirror _transliterate_word priority exactly (user, stem, hand...).
+        add(self._user_lexicon().get(key), "user")
+        stemmed = self._stem_mark(word)
+        if stemmed:
+            add(*stemmed)
+        add(WORD_CORRECTIONS.get(key), "hand")
+        add(AUTO_CORRECTIONS.get(key), "auto")
+        # NOTE: phonetic runs on the ORIGINAL word: case is meaningful
+        # (trailing M = anusvara, m = consonant: aM->अं but am->अम).
+        add(self._transliterate_word(word, use_dict=False), "phonetic")
+        return out
+
+    def top(self, text: str) -> str:
+        """Best single form. Delegates to transliterate() so the two can
+        never disagree (candidates() is single-word; transliterate()
+        handles phrases word by word)."""
+        return self.transliterate(text)
 
     MODES = ("roman", "traditional", "traditional-kmn", "romanized")
 
@@ -162,18 +267,18 @@ class NepaliTransliterator:
         """Transliterate a single word using state machine."""
         if not word:
             return ""
-        # Dictionary autocorrect first: hand entries, then auto-imported.
+        # Dictionary autocorrect first: user-learned, hand, auto-imported.
         # (handles kathmandu->काठमाडौं etc.)
         if use_dict:
+            user_hit = self._user_lexicon().get(word.lower())
+            if user_hit:
+                return user_hit
             # Trailing anuswar/visarga keystroke (capital M/N/H or *):
             # in mim these keystrokes ARE the anusvara, so "sangaM" must read
             # as stem+mark (सँगं), never as lowercase whole-word ("sangam").
-            if len(word) > 1 and word[-1] in ANUSWAR:
-                stem_key = word[:-1].lower()
-                stem = WORD_CORRECTIONS.get(stem_key,
-                                            AUTO_CORRECTIONS.get(stem_key))
-                if stem:
-                    return stem + ANUSWAR[word[-1]]
+            stemmed = self._stem_mark(word)
+            if stemmed:
+                return stemmed[0]
             key = word.lower()
             correction = WORD_CORRECTIONS.get(key, AUTO_CORRECTIONS.get(key))
             if correction:
