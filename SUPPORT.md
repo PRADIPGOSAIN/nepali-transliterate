@@ -1,4 +1,4 @@
-# Platform & Feature Support — nepali-transl v0.8.2
+# Platform & Feature Support — nepali-transl v0.13.0
 
 What the project does, and where each piece runs. Everything below is
 verified unless marked *(unverified)*.
@@ -17,7 +17,7 @@ verified unless marked *(unverified)*.
 | Google Input Tools backend | ✅ opt-in | CLI `--google`, app checkboxes; offline default |
 | Preeti → Unicode rescue | ✅ opt-in | Needs `pip install nepali-transl[preeti]` |
 | Google benchmark vs our engine | ✅ | `tools/google_bench.py` (online, human-reviewed) |
-| System-wide typing, Linux | ✅ | Via fcitx5-m17n / ibus-m17n (same keystrokes) |
+| System-wide typing, Linux | ✅ | Native IBus engine (Settings → add Nepali) + Rime schema for fcitx5-rime + classic fcitx5-m17n / ibus-m17n |
 | System-wide typing, Windows/macOS/mobile | ⚠️ path ready | `.kmn` generated; compiling in Keyman Developer not yet done |
 | Offline guarantee | ✅ | Enforced by test (`test_no_network_imports_in_core`) |
 

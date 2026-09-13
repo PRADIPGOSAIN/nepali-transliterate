@@ -2,7 +2,7 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-58%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
 **Offline Nepali typing toolkit with roman transliteration, traditional
@@ -164,11 +164,18 @@ Five-lesson path (also shown in the app):
 
 Type directly into Word, browsers, chat — any application:
 
-- **Linux** — install fcitx5 + m17n for your distro (table above uses
-  `fcitx5 fcitx5-m17n m17n-db` on Debian/Fedora/SUSE,
-  `fcitx5-im fcitx5-m17n m17n-db` on Arch), then in
-  `fcitx5-configtool` add **`m17n_ne_rom-translit`**
-  (uncheck “Only Show Current Language” to find it). Restart fcitx5.
+- **Linux Settings (EN ↔ NP switch)** — install our native IBus engine:
+  ```bash
+  # needs: ibus + python3-gi (e.g. sudo apt install ibus python3-gi)
+  sudo ./ibus/install.sh && ibus restart
+  ```
+  Then **Settings → Keyboard → Input Sources → + → Nepali →
+  Nepali Transliterate**. Switch languages with Super+Space.
+  Live preedit + candidate list (dictionary, fuzzy, your learned words).
+- **Linux fcitx5** — two options: (a) classic `fcitx5-m17n` +
+  `m17n-db`, enable `m17n_ne_rom-translit` in `fcitx5-configtool`;
+  (b) our Rime schema: copy `rime/*.yaml` to `~/.local/share/fcitx5/rime/`
+  (needs `fcitx5-rime`), select **Nepali Transliterate**, redeploy.
   Same keystrokes as this project's roman mode. (`ibus` + `ibus-m17n`
   works too.)
 - **Windows / macOS / Android / iOS** — via Keyman (free, open source):
@@ -265,6 +272,8 @@ python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 python3 tests/test_desktop.py         # 5 — GUI build, typing, modes, IME (skips headless)
 python3 tests/test_keyman.py           # 3 — .kmn coverage, structure, package XML
+python3 tests/test_ibus.py             # 4 — typing flow, backspace, candidates, XML
+python3 tests/test_rime.py             # 2 — dict format + schema
 ```
 
 ## Open work

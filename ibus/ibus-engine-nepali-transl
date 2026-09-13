@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""IBus engine: Nepali Transliterate (system-wide Linux input).
+
+Installs as an IBus input source, so it appears in
+GNOME Settings -> Keyboard -> Input Sources -> Nepali (and KDE's
+ibus preferences): add it once, then switch EN <-> NP with Super+Space.
+
+Typing model (roman transliteration with live candidates):
+  type "namaste" -> preedit shows नमस्ते, lookup table offers forms
+  Space/Enter commits top form - BackSpace edits roman - Esc cancels
+  Up/Down + 1..5 pick alternates (user picks are learned locally)
+
+Layout: this file lives in ibus/ next to ../core/ in a checkout, or in
+/usr/share/ibus-nepali-transl/ with core/ beside it when installed.
+Needs: ibus daemon + python3-gi (per-distro lines in README).
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                ".."))
+
+ENGINE_NAME = "nepali-translit"
+BUS_NAME = "org.freedesktop.IBus.NepaliTranslit"
+
+
+def _load_ibus():
+    import gi
+    gi.require_version("IBus", "1.0")
+    from gi.repository import IBus, GLib, GObject
+    return IBus, GLib, GObject
+
+
+class NepaliEngineBase:
+    """Framework-free typing logic; IBus subclass adds the I/O below."""
+
+    PAGE_SIZE = 5
+
+    def __init__(self, transliterator):
+        self._tr = transliterator
+        self._buf = ""
+        self._lookup_visible = False
+
+    # -- pure logic (unit-tested without IBus) ---------------------------
+
+    def handle_char(self, ch):
+        """Append a typed character. Returns (preedit, candidates)."""
+        self._buf += ch
+        return self._render()
+
+    def handle_backspace(self):
+        """Returns (preedit, candidates, consumed)."""
+        if not self._buf:
+            return "", [], False
+        self._buf = self._buf[:-1]
+        preedit, cands = self._render()
+        return preedit, cands, True
+
+    def handle_escape(self):
+        had = bool(self._buf)
+        self._buf = ""
+        return had
+
+    def current_top(self):
+        return self._tr.transliterate(self._buf) if self._buf else ""
+
+    def _render(self):
+        if not self._buf:
+            return "", []
+        cands = [f for f, _ in self._tr.candidates(self._buf)]
+        return self._tr.transliterate(self._buf), cands[:self.PAGE_SIZE]
+
+    def reset_buffer(self):
+        self._buf = ""
+
+
+def create_engine(IBus, transliterator):
+    """Build the real IBus.Engine subclass (needs gi + running daemon)."""
+
+    class NepaliEngine(IBus.Engine):
+        __gtype_name__ = "NepaliTranslitEngine"
+
+        def __init__(self):
+            super().__init__()
+            self._logic = NepaliEngineBase(transliterator)
+            self._table = IBus.LookupTable.new(5, 0, True, True)
+
+        # -- IBus.Engine overrides --------------------------------------
+
+        def _refresh(self):
+            preedit, cands = self._logic._render()
+            if preedit:
+                self.update_preedit_text(
+                    IBus.Text.new_from_string(preedit), len(preedit), True)
+            else:
+                self.hide_preedit_text()
+            self._table.clear()
+            for form in cands:
+                self._table.append_candidate(
+                    IBus.Text.new_from_string(form))
+            if cands:
+                self.update_lookup_table(self._table, True)
+            else:
+                self.hide_lookup_table()
+
+        def _commit_top(self):
+            top = self._logic.current_top()
+            if top:
+                self.commit_text(IBus.Text.new_from_string(top))
+            self._logic.reset_buffer()
+            self.hide_preedit_text()
+            self.hide_lookup_table()
+
+        def process_key_event(self, keyval, keycode, state):
+            mods = (IBus.ModifierType.CONTROL_MASK
+                    | IBus.ModifierType.MOD1_MASK
+                    | IBus.ModifierType.SUPER_MASK)
+            if state & mods:
+                return False  # let shortcuts (Ctrl+C...) pass through
+            if state & IBus.ModifierType.RELEASE_MASK:
+                return False
+            ch = IBus.keyval_to_unicode(keyval)
+            char = chr(ch) if ch else ""
+            if char and (char.isalnum() or char in "./~*\\|'"):
+                self._logic.handle_char(char)
+                self._refresh()
+                return True
+            if keyval in (IBus.KEY_space, IBus.KEY_KP_Space):
+                if not self._logic._buf:
+                    return False
+                self._commit_top()
+                return True
+            if keyval in (IBus.KEY_Return, IBus.KEY_KP_Enter):
+                if not self._logic._buf:
+                    return False
+                self._commit_top()
+                return True
+            if keyval == IBus.KEY_BackSpace:
+                _, _, consumed = self._logic.handle_backspace()
+                if consumed:
+                    self._refresh()
+                return consumed
+            if keyval == IBus.KEY_Escape:
+                if self._logic.handle_escape():
+                    self.hide_preedit_text()
+                    self.hide_lookup_table()
+                    return True
+                return False
+            if keyval in (IBus.KEY_Up, IBus.KEY_Down,
+                          IBus.KEY_Page_Up, IBus.KEY_Page_Down):
+                if self._logic._buf:
+                    if keyval in (IBus.KEY_Up, IBus.KEY_Page_Up):
+                        self._table.cursor_up()
+                    else:
+                        self._table.cursor_down()
+                    self.update_lookup_table(self._table, True)
+                    return True
+                return False
+            if char.isdigit() and self._logic._buf:
+                idx = int(char) - 1
+                cands = [f for f, _ in
+                         self._logic._tr.candidates(self._logic._buf)][:5]
+                if 0 <= idx < len(cands):
+                    self.commit_text(
+                        IBus.Text.new_from_string(cands[idx]))
+                    self._logic.reset_buffer()
+                    self.hide_preedit_text()
+                    self.hide_lookup_table()
+                    return True
+                return False
+            return False
+
+        def focus_in(self):
+            self._logic.reset_buffer()
+
+        def focus_out(self):
+            self._logic.reset_buffer()
+            self.hide_preedit_text()
+            self.hide_lookup_table()
+
+        def reset(self):
+            self._logic.reset_buffer()
+            self.hide_preedit_text()
+            self.hide_lookup_table()
+
+    return NepaliEngine
+
+
+def main():
+    IBus, GLib, GObject = _load_ibus()
+    from core.nepali_transl import get_transliterator
+    NepaliEngine = create_engine(IBus, get_transliterator())
+
+    IBus.init()
+    bus = IBus.Bus()
+    if not bus.is_connected():
+        print("error: cannot connect to ibus-daemon. Start it first "
+              "(ibus-daemon -drx) or enable IBus in your session.",
+              file=sys.stderr)
+        return 1
+    factory = IBus.Factory.new(bus.get_connection())
+    factory.add_engine(ENGINE_NAME, NepaliEngine.__gtype__)
+    bus.request_name(BUS_NAME, 0)
+    print(f"{ENGINE_NAME} engine running (bus {BUS_NAME}). Ctrl+C to stop.")
+    loop = GLib.MainLoop()
+    try:
+        loop.run()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

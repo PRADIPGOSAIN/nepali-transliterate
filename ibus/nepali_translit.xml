@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component>
+  <name>org.freedesktop.IBus.NepaliTranslit</name>
+  <description>Nepali Transliterate input method (offline roman to Unicode)</description>
+  <exec>/usr/share/ibus-nepali-transl/ibus-engine-nepali-transl</exec>
+  <version>0.13.0</version>
+  <author>Pradip Gosain</author>
+  <license>GPL-2.0-or-later</license>
+  <homepage>https://github.com/PRADIPGOSAIN/nepali-transliterate</homepage>
+  <textdomain>ibus-nepali-transl</textdomain>
+  <engines>
+    <engine>
+      <name>nepali-translit</name>
+      <language>ne</language>
+      <license>GPL-2.0-or-later</license>
+      <author>Pradip Gosain</author>
+      <layout>us</layout>
+      <longname>Nepali Transliterate</longname>
+      <description>Type romanized Nepali, get Unicode Devanagari (offline, with dictionary + learning)</description>
+      <icon>ibus-nepali-transl</icon>
+      <symbol>N</symbol>
+      <rank>99</rank>
+    </engine>
+  </engines>
+</component>

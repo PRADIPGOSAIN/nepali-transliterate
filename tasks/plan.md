@@ -229,6 +229,16 @@ and verified by tests.
 
 ### Checkpoint: Ship — DONE (37+7+6+5+3 = 58 green)
 
+## Phase 17: Settings integration (EN ↔ NP) — DONE (v0.13.0)
+- Native IBus engine (ibus/): preedit + lookup table driven by
+  candidates(), shortcuts pass through, install.sh + component XML.
+  Logic unit-tested without a daemon (gi unavailable here).
+- Rime schema export (tools/export_rime.py): 6,352 entries, hand-first,
+  validated by tests. Works with fcitx5-rime and ibus-rime.
+- README/SUPPORT updated with Settings paths (GNOME + KDE).
+
+### Checkpoint: Input settings — DONE (37+7+6+5+3+4+2 = 64 green)
+
 ## Still open (human steps only)
 - PyPI upload needs your PyPI account (`twine upload dist/nepali_transl-*`;
   packages are validated and ready).
