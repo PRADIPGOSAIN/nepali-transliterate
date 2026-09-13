@@ -26,7 +26,6 @@ class App(tk.Tk):
         self.title("नेपाली Transliterate")
         self.geometry("720x560")
         self._build()
-        self._timer = None
 
     @staticmethod
     def _devanagari_font() -> str:
@@ -146,9 +145,8 @@ class App(tk.Tk):
 
     def _on_edit(self, _evt=None):
         self.roman.edit_modified(False)
-        if self._timer:
-            self.after_cancel(self._timer)
-        self._timer = self.after(120, self._update)
+        # Offline engine is ~ms fast: refresh on this keystroke, no waiting.
+        self._update()
 
     _HINTS = {
         "roman": "Roman input (e.g. namaste kasto chha):",

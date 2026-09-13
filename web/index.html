@@ -73,6 +73,10 @@
 
 <div class="box">
   <label><b>नेपाली Unicode output:</b></label>
+  <span id="liveDot" title="flashes on every live update"
+        style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ecc71;margin-left:8px;vertical-align:middle;"></span>
+  <span class="hint">LIVE</span>
+  <span class="hint" id="verSpan" style="float:right"></span>
   <div id="output"></div>
   <div class="row">
     <button class="primary" onclick="copyOut()">Copy</button>
@@ -155,6 +159,9 @@ async function update() {
     const d = await r.json();
     if (mySeq !== seq) return;  // stale: a newer keystroke won
     outEl.textContent = d.result || '';
+    const dot = document.getElementById('liveDot');
+    dot.style.background = '#e74c3c';
+    setTimeout(() => { dot.style.background = '#2ecc71'; }, 120);
     sugEl.innerHTML = '';
     (d.suggestions || []).forEach(s => {
       const b = document.createElement('button');
@@ -174,9 +181,16 @@ async function update() {
 let t = null;
 romanEl.addEventListener('input', () => {
   clearTimeout(t);
+  // Offline engine answers in ~10ms: update on THIS frame, no waiting.
+  // Google suggestions ride along slower in the same request.
   const slow = document.getElementById('googleSuggest').checked;
-  t = setTimeout(update, slow ? 500 : 120);  // let Google breathe
+  if (slow) t = setTimeout(update, 400);
+  else update();
 });
+fetch('/api/health').then(r => r.json()).then(d => {
+  document.getElementById('verSpan').textContent = 'engine v' + d.version +
+    ' — if words look outdated, restart server after git pull';
+}).catch(() => {});
 
 /* ---- visual keyboard ---- */
 let vkData = null, vkLayout = 'traditional';

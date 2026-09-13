@@ -69,7 +69,9 @@ class Handler(BaseHTTPRequestHandler):
             with open(os.path.join(HERE, "index.html"), "rb") as f:
                 self._send(200, f.read())
         elif path == "/api/health":
-            self._send(200, b'{"ok": true}', "application/json")
+            from core import __version__ as _v
+            self._send(200, json.dumps({"ok": True, "version": _v}).encode(),
+                       "application/json")
         elif path == "/api/layouts":
             from core.traditional import (TRAD_MAP, TRAD_KMN_MAP,
                                           LAYOUT_NAME, LAYOUT_KMN_NAME,
