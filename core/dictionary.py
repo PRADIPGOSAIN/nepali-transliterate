@@ -1,0 +1,156 @@
+"""Common Nepali word dictionary for autocorrect and suggestions.
+
+Maps frequent romanized spellings to correct Devanagari forms.
+This handles cases where phonetic transliteration alone is insufficient,
+e.g. 'kathmandu' -> 'काठमाडौं' (not कथ्मन्दु).
+"""
+
+# High-frequency word corrections: romanized -> correct Devanagari
+WORD_CORRECTIONS = {
+    # Places
+    'kathmandu': 'काठमाडौं',
+    'lalitpur': 'ललितपुर',
+    'bhaktapur': 'भक्तपुर',
+    'pokhara': 'पोखरा',
+    'chitwan': 'चितवन',
+    'biratnagar': 'विराटनगर',
+    'birgunj': 'वीरगञ्ज',
+    'dharan': 'धरान',
+    'nepal': 'नेपाल',
+    'nepali': 'नेपाली',
+    'nepaali': 'नेपाली',
+    # Greetings / common
+    'namaste': 'नमस्ते',
+    'namaskar': 'नमस्कार',
+    'dhanyabad': 'धन्यवाद',
+    'dhanyabaad': 'धन्यवाद',
+    'swagat': 'स्वागत',
+    'swagatam': 'स्वागतम्',
+    # Pronouns / verbs
+    'ma': 'म',
+    'hami': 'हामी',
+    'timi': 'तिमी',
+    'tapai': 'तपाईं',
+    'tapaai': 'तपाईं',
+    'hajur': 'हजुर',
+    'huncha': 'हुन्छ',
+    'hunchha': 'हुन्छ',
+    'chha': 'छ',
+    'chhaina': 'छैन',
+    'ho': 'हो',
+    'haina': 'हैन',
+    # Adjectives
+    'ramro': 'राम्रो',
+    'naramro': 'नराम्रो',
+    'sajilo': 'सजिलो',
+    'gahro': 'गाह्रो',
+    'thulo': 'ठूलो',
+    'sano': 'सानो',
+    # Nouns
+    'ghar': 'घर',
+    'khana': 'खाना',
+    'khaana': 'खाना',
+    'pani': 'पानी',
+    'paani': 'पानी',
+    'bato': 'बाटो',
+    'baato': 'बाटो',
+    'kura': 'कुरा',
+    'kuraa': 'कुरा',
+    'kaam': 'काम',
+    'kam': 'काम',
+    'paisa': 'पैसा',
+    'samaya': 'समय',
+    'din': 'दिन',
+    'raat': 'रात',
+    'raati': 'राति',
+    'bihan': 'बिहान',
+    'bihaan': 'बिहान',
+    'beluka': 'बेलुका',
+    # Family
+    'ama': 'आमा',
+    'aamaa': 'आमा',
+    'buwa': 'बुवा',
+    'buwaa': 'बुवा',
+    'buba': 'बुबा',
+    'dai': 'दाइ',
+    'daai': 'दाइ',
+    'didi': 'दिदी',
+    'bhai': 'भाइ',
+    'bhaai': 'भाइ',
+    'bahini': 'बहिनी',
+    # Misc
+    'kasto': 'कस्तो',
+    'kesto': 'केस्तो',
+    'kina': 'किन',
+    'kahile': 'कहिले',
+    'kaha': 'कहाँ',
+    'ke': 'के',
+    'ki': 'कि',
+    'ra': 'र',
+    'r': 'र्',
+    'ko': 'को',
+    'kaa': 'का',
+    'lai': 'लाई',
+    'laai': 'लाई',
+    'maa': 'मा',
+    'bata': 'बाट',
+    'baata': 'बाट',
+    'sanga': 'सँग',
+    'sangai': 'सँगै',
+    'ani': 'अनि',
+    'tara': 'तर',
+    'yadi': 'यदि',
+    'bhane': 'भने',
+    # Verbs / verb forms (phonetics alone misspells these)
+    'garne': 'गर्ने',
+    'garchha': 'गर्छ',
+    'gareko': 'गरेको',
+    'bhayo': 'भयो',
+    'bhayena': 'भएन',
+    'parchha': 'पर्छ',
+    'lageko': 'लागेको',
+    # Questions / locations
+    'kasari': 'कसरी',
+    'kata': 'कता',
+    'kahaa': 'कहाँ',
+    'jaha': 'जहाँ',
+    'tahaa': 'तहाँ',
+    'yaha': 'यहाँ',
+    'tyahaa': 'त्यहाँ',
+    # Postpositions
+    'bhitra': 'भित्र',
+    'bahira': 'बाहिर',
+    'mathi': 'माथि',
+    'muni': 'मुनि',
+    'agadi': 'अगाडि',
+    'pachhadi': 'पछाडि',
+    # Time words
+    'aaja': 'आज',
+    'bholi': 'भोलि',
+    'hijo': 'हिजो',
+    'ahile': 'अहिले',
+    # Quantity
+    'dherai': 'धेरै',
+    'thorai': 'थोरै',
+    'sabai': 'सबै',
+    # Common nouns phonetics misspells
+    'sarkar': 'सरकार',
+    'bidyalaya': 'बिद्यालय',
+    'sath': 'साथ',
+    # Disambiguate noisy auto pairs toward the standard form
+    'bolneharulai': 'बोल्नेहरूलाई',
+    # mb/nb clusters users never intend as conjuncts
+    'sombar': 'सोमबार',
+}
+
+# Suggestion wordlist (romanized forms for autocomplete)
+SUGGESTION_WORDS = sorted(set(
+    list(WORD_CORRECTIONS.keys()) + [
+        'nagarik', 'bharat', 'gagan', 'siraha', 'mahendra',
+        'bishweshwar', 'prithvi', 'vidya', 'sanskrit', 'devanagari',
+        'tribhuvan', 'birendra', 'shah', 'sabha', 'sanskriti',
+        'nyaya', 'gyan', 'bidhan', 'rajya', 'gorkha',
+        'jumla', 'dolpa', 'mustang', 'manang',
+        'jatra', 'chaina', 'daina', 'yaha', 'chan',
+    ]
+))

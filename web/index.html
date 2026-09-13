@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>नेपाली Transliterate — Roman to Unicode Typing</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, "Nirmala UI", "Noto Sans Devanagari", "Mangal", "Kalimati", sans-serif;
+         max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+  h1 { color: #1a5276; }
+  .box { background: #fff; border-radius: 8px; padding: 16px; margin: 12px 0;
+         box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  textarea { width: 100%; min-height: 100px; font-size: 18px; padding: 10px;
+             border: 1px solid #ccc; border-radius: 6px; }
+  #output { min-height: 100px; font-size: 22px; line-height: 1.8;
+            background: #fbfbfb; border: 1px dashed #aaa; border-radius: 6px;
+            padding: 10px; white-space: pre-wrap; }
+  #suggest button { margin: 4px; padding: 6px 12px; font-size: 16px;
+                    border: 1px solid #1a5276; background: #eaf2f8; color: #1a5276;
+                    border-radius: 20px; cursor: pointer; }
+  #suggest button:hover { background: #1a5276; color: #fff; }
+  .row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .row button { padding: 8px 16px; font-size: 15px; border-radius: 6px;
+                border: none; cursor: pointer; }
+  .primary { background: #1a5276; color: #fff; }
+  .secondary { background: #ddd; }
+  .hint { color: #666; font-size: 14px; }
+  kbd { background: #eee; border: 1px solid #ccc; border-radius: 4px; padding: 0 6px; }
+  #vk .vkrow { display: flex; gap: 4px; margin: 4px 0; }
+  #vk .vkkey { min-width: 44px; padding: 6px 4px; text-align: center;
+               border: 1px solid #bbb; border-radius: 6px; background: #fff;
+               cursor: pointer; font-size: 16px; line-height: 1.3; }
+  #vk .vkkey small { display: block; font-size: 11px; color: #888; }
+  #vk .vkkey:hover { background: #eaf2f8; }
+  #vk .vkkey.active { background: #1a5276; color: #fff; }
+  #vk .vkkey.active small { color: #cde; }
+  .vk-tab.current { background: #1a5276; color: #fff; }
+</style>
+</head>
+<body>
+<h1>नेपाली Transliterate</h1>
+<p class="hint">Two independent offline modes. <b>Romanized:</b> type
+  <kbd>namaste kasto chha</kbd> → <b>नमस्ते कस्तो छ</b>.
+  <b>Traditional:</b> type with Nepali-keyboard habit (<kbd>k</kbd>→प,
+  <kbd>f</kbd>→ा). Based on
+  <a href="https://github.com/sapradhan/ne-rom-translit">ne-rom-translit</a>.</p>
+
+<div class="box">
+  <label><b>Layout:</b></label>
+  <label><input type="radio" name="mode" value="roman" checked
+    onchange="update()"> Translit</label>
+  <label style="margin-left:12px"><input type="radio" name="mode" value="traditional"
+    onchange="update()"> Traditional</label>
+  <label style="margin-left:12px"><input type="radio" name="mode" value="traditional-kmn"
+    onchange="update()"> Trad-rev</label>
+  <label style="margin-left:12px"><input type="radio" name="mode" value="romanized"
+    onchange="update()"> Romanized</label>
+</div>
+
+<div class="box">
+  <label><b>Input:</b></label>
+  <textarea id="roman" placeholder="namaste..."></textarea>
+  <div id="suggest"></div>
+</div>
+
+<div class="box">
+  <label><b>नेपाली Unicode output:</b></label>
+  <div id="output"></div>
+  <div class="row">
+    <button class="primary" onclick="copyOut()">Copy</button>
+    <button class="secondary" onclick="downloadTxt()">Download .txt</button>
+    <button class="secondary" onclick="clearAll()">Clear</button>
+  </div>
+</div>
+
+<div class="box">
+  <label><b>Visual keyboard</b></label>
+  <span class="hint"> — see every key, click to type, or press your real
+  keys and watch them light up.</span>
+  <div class="row" id="vkLayouts">
+    <button class="secondary vk-tab" data-vk="traditional">Traditional</button>
+    <button class="secondary vk-tab" data-vk="traditional-kmn">Trad-rev</button>
+    <button class="secondary vk-tab" data-vk="romanized">Romanized</button>
+    <label class="hint" style="margin-left:12px">
+      <input type="checkbox" id="vkShift" onchange="renderVk()"> Shift</label>
+  </div>
+  <div id="vk" style="margin-top:10px"></div>
+  <div class="hint" id="vkSource" style="margin-top:6px"></div>
+</div>
+
+<div class="box">
+  <label><b>Learn like a pro (Traditional layout, 5 lessons)</b></label>
+  <ol class="hint">
+    <li><b>Home row:</b> left hand <kbd>a s d f</kbd> → ब क म ा,
+      right hand <kbd>j k l ;</kbd> → व प ि स. Drills (Traditional mode):
+      <kbd>n f d</kbd> → <b>लाम</b>, <kbd>k d</kbd> → <b>पम</b>,
+      <kbd>h f g f d</kbd> → <b>जानाम</b>. Repeat until automatic.</li>
+    <li><b>Vowels:</b> <kbd>f</kbd>→ा <kbd>l</kbd>→ि <kbd>'</kbd>→ु
+      <kbd>"</kbd>→ू <kbd>]</kbd>→े <kbd>c</kbd>→अ <kbd>A</kbd>→आ.</li>
+    <li><b>Shift layer:</b> capitals give compounds —
+      <kbd>Q</kbd>→त्त <kbd>T</kbd>→ट्ट <kbd>I</kbd>→क्ष
+      <kbd>!</kbd>→ज्ञ <kbd>$</kbd>→द्ध.</li>
+    <li><b>Conjuncts:</b> <kbd>\</kbd> is halant ् —
+      <kbd>k \ q</kbd> → क्त. <kbd>[</kbd> is repha र्.</li>
+    <li><b>Words:</b> <kbd>gfdLGL</kbd> → नामीद्दी.
+      Graduate to Romanized mode: <kbd>namaste</kbd> → नमस्ते.</li>
+  </ol>
+</div>
+
+<div class="box hint">
+  <b>Tips (Romanized):</b> long vowels — double them (<kbd>aa</kbd>→आ,
+  <kbd>ii</kbd>→ई, <kbd>uu</kbd>→ऊ). Retroflex — capitals (<kbd>T</kbd>→ट,
+  <kbd>D</kbd>→ड, or <kbd>t/</kbd>→ट). Compounds: <kbd>ksh</kbd>→क्ष,
+  <kbd>tr</kbd>→त्र, <kbd>gyn</kbd>/<kbd>jn</kbd>→ज्ञ. Full stop:
+  <kbd>.</kbd>→। Numbers 0-9 → ०-९.
+  <b>Traditional mode:</b> keys map directly — home row
+  <kbd>a s d f g h j k l</kbd> → <b>ब क म ा न ज व प ि</b>.
+</div>
+
+<script>
+const romanEl = document.getElementById('roman');
+const outEl = document.getElementById('output');
+const sugEl = document.getElementById('suggest');
+
+function currentMode() {
+  const el = document.querySelector('input[name="mode"]:checked');
+  return el ? el.value : 'roman';
+}
+
+async function update() {
+  const text = romanEl.value;
+  if (!text.trim()) { outEl.textContent = ''; sugEl.innerHTML = ''; return; }
+  try {
+    const r = await fetch('/api/transliterate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text, mode: currentMode()})
+    });
+    const d = await r.json();
+    outEl.textContent = d.result || '';
+    sugEl.innerHTML = '';
+    (d.suggestions || []).forEach(s => {
+      const b = document.createElement('button');
+      b.textContent = s;
+      b.onclick = () => {
+        const words = romanEl.value.split(/\s+/);
+        words[words.length - 1] = s;
+        romanEl.value = words.join(' ') + ' ';
+        update();
+        romanEl.focus();
+      };
+      sugEl.appendChild(b);
+    });
+  } catch (e) { /* offline fallback below */ }
+}
+
+let t = null;
+romanEl.addEventListener('input', () => { clearTimeout(t); t = setTimeout(update, 120); });
+
+/* ---- visual keyboard ---- */
+let vkData = null, vkLayout = 'traditional';
+async function loadVk() {
+  try {
+    const r = await fetch('/api/layouts');
+    vkData = await r.json();
+  } catch (e) { return; }
+  document.querySelectorAll('.vk-tab').forEach(b => {
+    b.onclick = () => {
+      vkLayout = b.dataset.vk;
+      document.querySelectorAll('.vk-tab').forEach(x =>
+        x.classList.toggle('current', x === b));
+      renderVk();
+    };
+  });
+  document.querySelector('.vk-tab').classList.add('current');
+  renderVk();
+}
+function renderVk() {
+  if (!vkData) return;
+  const shift = document.getElementById('vkShift').checked;
+  const map = vkData.layouts[vkLayout].map;
+  const rows = shift ? vkData.shift_rows : vkData.rows;
+  const box = document.getElementById('vk');
+  box.innerHTML = '';
+  rows.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'vkrow';
+    row.forEach(ch => {
+      const b = document.createElement('button');
+      b.className = 'vkkey';
+      b.dataset.key = ch.toLowerCase();
+      const shown = map[ch] || ch;
+      b.innerHTML = '<small>' + escapeHtml(ch) + '</small>' + escapeHtml(shown);
+      b.title = 'key ' + ch + ' → ' + shown;
+      b.onclick = () => {
+        romanEl.value += ch;
+        update();
+        romanEl.focus();
+      };
+      div.appendChild(b);
+    });
+    box.appendChild(div);
+  });
+  document.getElementById('vkSource').textContent =
+    'Layout: ' + vkData.layouts[vkLayout].name +
+    ' — ' + vkData.layouts[vkLayout].source;
+}
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+}
+document.addEventListener('keydown', e => {
+  if (e.key.length !== 1) return;
+  const b = document.querySelector(
+    '#vk .vkkey[data-key="' + CSS.escape(e.key.toLowerCase()) + '"]');
+  if (b) b.classList.add('active');
+});
+document.addEventListener('keyup', e => {
+  document.querySelectorAll('#vk .vkkey.active').forEach(b =>
+    b.classList.remove('active'));
+});
+loadVk();
+
+function copyOut() {
+  navigator.clipboard.writeText(outEl.textContent).then(() =>
+    alert('Copied!'));
+}
+function downloadTxt() {
+  const blob = new Blob([outEl.textContent], {type: 'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nepali.txt';
+  a.click();
+}
+function clearAll() { romanEl.value = ''; outEl.textContent = ''; sugEl.innerHTML = ''; }
+</script>
+</body>
+</html>

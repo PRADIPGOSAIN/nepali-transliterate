@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+# Project QA artefacts (local only, never distributed)
+tools/.google_cache.jsonl
+tools/google_review.tsv

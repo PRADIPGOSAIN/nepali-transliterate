@@ -1,0 +1,126 @@
+c Nepali Transliterate keyboard — generated from nepali-transl mapping
+c Source project: nepali-transl engine by Pradip Gosain (GPL-2.0-or-later)
+c License: GPL-2.0-or-later
+
+store(&VERSION) '10.0'
+store(&NAME) 'Nepali Transliterate'
+store(&COPYRIGHT) 'GPL-2.0-or-later'
+store(&MESSAGE) 'Romanized Nepali: type namaste -> \U0928\U092E\U0938\U094D\U0924\U0947'
+store(&TARGETS) 'any'
+store(&LANGUAGE) 'ne'
+
+c Consonants accepting matras
+store(consonant) 'क' 'ख' 'ग' 'घ' 'ङ' 'च' 'छ' 'ज' 'झ' 'ञ' 'ट' 'ठ' 'ड' 'ढ' 'ण' 'त' 'थ' 'द' 'ध' 'न' 'प' 'फ' 'ब' 'भ' 'म' 'य' 'र' 'ल' 'व' 'श' 'ष' 'स' 'ह'
+c Vowel keys (any() longest-match) and their matras
+store(vowelkey) 'rrii' 'rri' 'aa' 'ee' 'ii' 'uu' 'oo' 'ai' 'au' 'a' 'A' 'i' 'I' 'u' 'U' 'e' 'o'
+store(vowelmat) 'ॄ' 'ृ' 'ा' 'ी' 'ी' 'ू' 'ू' 'ै' 'ौ' '' 'ा' 'ि' 'ी' 'ु' 'ू' 'े' 'ो'
+
+begin Unicode > use(main)
+
+group(main) using keys
+
+c --- 1. multi-char consonant clusters, longest first ---
+  + 'ksh' > 'क्ष'
+  + 'chh' > 'छ'
+  + 'th/' > 'ठ'
+  + 'dh/' > 'ढ'
+  + 'shh' > 'ष'
+  + 'gyn' > 'ज्ञ'
+  + 'ng' > 'ङ'
+  + 'yn' > 'ञ'
+  + 'n/' > 'ण'
+  + 't/' > 'ट'
+  + 'd/' > 'ड'
+  + 'gy' > 'ग्य'
+  + 'kh' > 'ख'
+  + 'gh' > 'घ'
+  + 'ch' > 'च'
+  + 'jh' > 'झ'
+  + 'Th' > 'ठ'
+  + 'Dh' > 'ढ'
+  + 'th' > 'थ'
+  + 'dh' > 'ध'
+  + 'ph' > 'फ'
+  + 'bh' > 'भ'
+  + 'sh' > 'श'
+  + 'Sh' > 'ष'
+  + 'ks' > 'क्स'
+
+c --- 2. consonant + vowel -> consonant + matra ---
+  + any(consonant) + any(vowelkey) > index(vowelmat, 2)
+
+c --- 3. single consonants ---
+  + 'T' > 'ट'
+  + 'D' > 'ड'
+  + 'k' > 'क'
+  + 'g' > 'ग'
+  + 't' > 'त'
+  + 'd' > 'द'
+  + 'n' > 'न'
+  + 'p' > 'प'
+  + 'f' > 'फ'
+  + 'b' > 'ब'
+  + 'm' > 'म'
+  + 'y' > 'य'
+  + 'r' > 'र'
+  + 'R' > 'र'
+  + 'l' > 'ल'
+  + 'v' > 'व'
+  + 'w' > 'व'
+  + 's' > 'स'
+  + 'h' > 'ह'
+  + 'x' > 'क्स'
+  + 'c' > 'क'
+  + 'q' > 'क'
+  + 'j' > 'ज'
+  + 'z' > 'ज'
+
+c --- 4. standalone vowels ---
+  + 'rree' > 'ॠ'
+  + 'rrii' > 'ॄ'
+  + 'AUM' > 'ॐ'
+  + 'rri' > 'ऋ'
+  + 'OM' > 'ॐ'
+  + 'aa' > 'आ'
+  + 'ee' > 'ई'
+  + 'ii' > 'ई'
+  + 'uu' > 'ऊ'
+  + 'oo' > 'ऊ'
+  + 'ai' > 'ऐ'
+  + 'au' > 'औ'
+  + 'a' > 'अ'
+  + 'A' > 'आ'
+  + 'i' > 'इ'
+  + 'I' > 'ई'
+  + 'u' > 'उ'
+  + 'U' > 'ऊ'
+  + 'e' > 'ए'
+  + 'o' > 'ओ'
+
+c --- 5. digits ---
+  + '0' > '०'
+  + '1' > '१'
+  + '2' > '२'
+  + '3' > '३'
+  + '4' > '४'
+  + '5' > '५'
+  + '6' > '६'
+  + '7' > '७'
+  + '8' > '८'
+  + '9' > '९'
+
+c --- 6. punctuation / signs ---
+c word-start M/N act as consonants (mirrors the Python engine)
+  + nul + 'M' > 'म'
+  + nul + 'N' > 'न'
+  + '..' > '॥'
+  + '.' > '।'
+  + '~a' > 'ऽ'
+  + '*' > 'ँ'
+  + 'H' > 'ः'
+  + 'M' > 'ं'
+  + 'N' > 'ं'
+  + '\\' > '्‌'
+  + '|' > '‌्‍'
+  + '~' > '।'
+

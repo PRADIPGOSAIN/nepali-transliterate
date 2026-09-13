@@ -1,0 +1,33 @@
+NOTICE — nepali-transl attribution and licensing notes
+==========================================================
+
+This project (code) is GPL-2.0-or-later, copyright Pradip Gosain.
+Successor to the ne-rom-translit m17n input method.
+
+Bundled / referenced works (NOT all GPL — see below):
+
+1. tools/reference/nepali_romanized.kmn (v1.0.1)
+   tools/reference/nepali_traditional.kmn (v1.3.1)
+   Source: https://github.com/keymanapp/keyboards (MIT license).
+   Used ONLY as machine-checked references for tests/test_layouts.py
+   (parsed, never shipped as code).
+
+2. core/words_auto.py (generated data file)
+   Derived from Saugatkafley/Nepali-Roman-Transliteration (HuggingFace,
+   https://huggingface.co/datasets/Saugatkafley/Nepali-Roman-Transliteration)
+   which is MIT licensed. Generated with tools/import_pairs.py; only pairs
+   the phonetic engine cannot derive are kept. This generated file is
+   distributed under this project's GPL-2.0-or-later with MIT attribution
+   retained in its header.
+
+3. core/traditional.py TRAD_MAP
+   Mapping facts ported from m17n ne-trad.mim (MPP traditional layout),
+   part of the m17n database (LGPL-2.1-or-later). LGPL-2.1-or-later data
+   combined into this GPL-2.0-or-later project is explicitly permitted
+   by LGPL-2.1 section 3.
+
+4. Optional runtime backends (NOT shipped, user-installed):
+   - preeti-unicode-converter (MIT) for --preeti mode
+   - Google Input Tools API (proprietary) for tools/google_bench.py QA only;
+     its cached outputs (tools/.google_cache.jsonl, tools/google_review.tsv)
+     are gitignored and never distributed.

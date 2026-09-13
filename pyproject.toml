@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nepali-transl"
+dynamic = ["version"]
+description = "Modern Nepali roman-to-Unicode transliteration engine (ne-rom-translit successor)"
+readme = "README.md"
+license = { text = "GPL-2.0-or-later" }
+authors = [{ name = "Pradip Gosain" }]
+keywords = ["nepali", "transliteration", "devanagari", "unicode", "input-method"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+  "Natural Language :: Nepali",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+preeti = ["preeti-unicode-converter>=0.1"]
+
+[project.scripts]
+nepali-transl = "core.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "core.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*"]
+
+[tool.setuptools.package-data]
+core = ["*.toml"]
