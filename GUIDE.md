@@ -141,6 +141,27 @@ Same keystrokes, smaller built-in dictionary.
 
 ---
 
+## Part 5.5 — Two Nepali engines: pick whichever feels easy
+
+Your system has **both** installed. They feel different — use either,
+switch anytime with **Ctrl+Space** (cycles English → m17n → Rime):
+
+| | m17n (direct) | Rime (smart) |
+|---|---|---|
+| Typing `mero` | Nepali appears **letter by letter**, no Space needed | Shows `mero` + suggestion list, **Space** commits |
+| Unknown words | Always sounds out | 23,000-entry dictionary + phonetic fallback |
+| Best for | Fast direct typing | Correct spellings, fuzzy matches |
+| Fcitx5 name | `m17n_ne_rom-translit` (default) | `rime` |
+
+Set your default: `fcitx5-configtool` → *Input Method* → select one →
+*Default*. Or switch live anytime:
+
+```bash
+qdbus6 org.fcitx.Fcitx5 /controller \
+  org.fcitx.Fcitx.Controller1.SetCurrentIM m17n_ne_rom-translit
+# replace with: rime | keyboard-us
+```
+
 ## Part 6 — How to type (the 3 rules that matter)
 
 1. **Type by sound**: `kasto chha` → कस्तो छ.
