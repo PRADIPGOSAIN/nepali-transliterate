@@ -113,7 +113,23 @@ and verified by tests.
 
 ### Checkpoint: Survey — DONE (20/20 + 7/7 + 6/6 tests = 33 green)
 
-## Open Questions
-- Push to GitHub as `nepali-transl` successor repo? (recommended next step)
-- PyInstaller `.exe` so Windows friends skip Python install?
-- Compile `.kmp` in Keyman Developer for system-wide Windows typing?
+## Phase 8: Publish + learn-like-a-pro — DONE (v0.5.0)
+- Authorship set to Pradip Gosain across project files.
+- Full GPL-2.0 LICENSE, NOTICE attribution file, version single-sourced
+  (0.5.0), complete .gitignore.
+- Visual keyboard: /api/layouts endpoint (3 maps + QWERTY rows/shift rows),
+  interactive web keyboard (layout tabs, Shift toggle, click-to-type,
+  live key-highlight on physical keypress).
+- 5-lesson pro guide in web UI + README drills.
+- Distro matrix (Arch/Debian/Fedora/openSUSE python+tk + fcitx5-m17n lines),
+  Windows ZIP path, macOS path.
+- GitHub: https://github.com/PRADIPGOSAIN/nepali-transliterate (public),
+  main pushed, tag v0.5.0 pushed. Fresh-clone verified: 20+7+6 green.
+
+### Checkpoint: Publish — DONE
+
+## Still open (needs your machines)
+- PyInstaller `.exe` on a Windows box for friends without Python.
+- Compile `.kmp` in Keyman Developer for system-wide typing.
+- Desktop GUI launch + Wayland clipboard check on your KDE session.
+- PyPI publish (`pip install nepali-transl`).
