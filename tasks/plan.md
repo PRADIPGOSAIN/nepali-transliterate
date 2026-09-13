@@ -239,6 +239,17 @@ and verified by tests.
 
 ### Checkpoint: Input settings — DONE (37+7+6+5+3+4+2 = 64 green)
 
+## Phase 18: Rime phonetic fallback — DONE (v0.13.1)
+- User report: unknown words dead-end in Rime (dict-only schema) while
+  m17n always sounds out. Root cause confirmed.
+- Export now appends generated syllabary (consonant x vowel, bare +a
+  forms both), top-40 mined conjuncts x vowels, bare singles, signs,
+  digits (7,947 rows). Longest-match keeps dictionary priority.
+- Deployed + rebuilt live on the dev machine; unknown words now produce
+  readable Devanagari instead of nothing.
+
+### Checkpoint: Rime fallback — DONE (37+7+6+5+3+4+3 = 65 green)
+
 ## Still open (human steps only)
 - PyPI upload needs your PyPI account (`twine upload dist/nepali_transl-*`;
   packages are validated and ready).

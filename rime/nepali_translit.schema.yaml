@@ -3,7 +3,7 @@
 schema:
   schema_id: nepali_translit
   name: Nepali Transliterate
-  version: "0.12.0"
+  version: "0.13.0"
   description: Romanized Nepali transliteration (offline dictionary)
 engine:
   processors:
@@ -24,7 +24,7 @@ engine:
   translators:
     - table_translator
 speller:
-  alphabet: abcdefghijklmnopqrstuvwxyz
+  alphabet: "*./0123456789ADHIMNORSTUabcdefghijklmnopqrstuvwxyz~"
   delimiter: " '"
 translator:
   dictionary: nepali_translit

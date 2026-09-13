@@ -16,9 +16,19 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from collections import Counter
 from core import __version__ as ENGINE_VERSION
 from core.dictionary import WORD_CORRECTIONS
 from core.words_auto import AUTO_CORRECTIONS
+from core.nepali_transl import (
+    CONSONANT_MAP,
+    INDEPENDENT_VOWELS,
+    DEPENDENT_VOWELS,
+    ANUSWAR,
+    PUNNA_VIRAM,
+    NUMBERS,
+    HALANT,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
@@ -50,7 +60,7 @@ engine:
   translators:
     - table_translator
 speller:
-  alphabet: abcdefghijklmnopqrstuvwxyz
+  alphabet: "{alphabet}"
   delimiter: " '"
 translator:
   dictionary: nepali_translit
@@ -67,40 +77,98 @@ sort: original
 columns:
   - text
   - code
-encoder:
-  exclude_patterns:
-    - '^.$'
-    - '^..$'
-  rules:
-    - length_equal: 2
-      formula: "AaAbBaBb"
-    - length_equal: 3
-      formula: "AaAbAcBaBbBcCaCbCc"
-    - length_in_range: [4, 10]
-      formula: "AaBaCaDa"
 ...
 """
 
 
+def _reverse_consonants():
+    """Devanagari consonant -> shortest roman key (k, kh, T, ...)."""
+    rev = {}
+    for key in sorted(CONSONANT_MAP, key=len):
+        char = CONSONANT_MAP[key]
+        if len(char) == 1 and char not in rev:
+            rev[char] = key
+    return rev
+
+
+def _top_conjuncts(limit=40):
+    """Most frequent C+halant+C clusters in dictionary forms."""
+    count = Counter()
+    for table in (WORD_CORRECTIONS, AUTO_CORRECTIONS):
+        for form in table.values():
+            for i, ch in enumerate(form[:-2]):
+                if form[i + 1] == HALANT:
+                    count[(ch, form[i + 2])] += 1
+    return [pair for pair, _ in count.most_common(limit)]
+
+
 def build_rows():
-    """[(form, code)] hand-first, de-duplicated (hand wins collisions)."""
+    """[(form, code)] hand-first, de-duplicated (hand wins collisions).
+
+    After dictionary words come generated phonetic-fallback rows so that
+    UNKNOWN words still transliterate instead of dead-ending (mim-style):
+    full syllabary (consonant x vowel incl. inherent-a), top conjuncts
+    x vowels, bare single consonants/vowels, digits and signs.
+    """
     rows, seen = [], set()
+
+    def add(form, code):
+        if code and code not in seen:
+            seen.add(code)
+            rows.append((form, code))
+
     for table in (WORD_CORRECTIONS, AUTO_CORRECTIONS):
         for key in sorted(table):
-            form = table[key]
-            if key in seen:
-                continue
-            seen.add(key)
-            rows.append((form, key))
+            add(table[key], key)
+
+    vkeys = sorted(DEPENDENT_VOWELS, key=len, reverse=True)
+    # syllabary: every consonant key x every vowel key. Inherent-'a'
+    # emits BOTH the bare code (ksh->क्ष, what users type) and the
+    # explicit +a form (ksha->क्ष), since Rime matches literal codes.
+    for ckey in sorted(CONSONANT_MAP, key=len, reverse=True):
+        char = CONSONANT_MAP[ckey]
+        for vkey in vkeys:
+            if vkey == "a":
+                add(char, ckey)
+                add(char, ckey + "a")
+            else:
+                add(char + DEPENDENT_VOWELS[vkey], ckey + vkey)
+    # top conjuncts x vowels (mined from dictionary forms)
+    rev = _reverse_consonants()
+    for c1, c2 in _top_conjuncts():
+        if c1 not in rev or c2 not in rev:
+            continue
+        base = c1 + HALANT + c2
+        rbase = rev[c1] + rev[c2]
+        for vkey in vkeys:
+            if vkey == "a":
+                add(base, rbase)
+                add(base, rbase + "a")
+            else:
+                add(base + DEPENDENT_VOWELS[vkey], rbase + vkey)
+    # bare singles: ultimate fallback + standalone vowels/signs/digits
+    for ckey in sorted(CONSONANT_MAP):
+        if len(ckey) == 1:
+            add(CONSONANT_MAP[ckey], ckey)
+    for vkey in sorted(INDEPENDENT_VOWELS):
+        add(INDEPENDENT_VOWELS[vkey], vkey)
+    for key, val in sorted(ANUSWAR.items()):
+        add(val, key)
+    for key in ("..", ".", "~a", "~"):
+        add(PUNNA_VIRAM[key], key)
+    for key in sorted(NUMBERS):
+        add(NUMBERS[key], key)
     return rows
 
 
 def export(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     rows = build_rows()
+    alphabet = "".join(sorted({ch for _, code in rows for ch in code}))
     with open(os.path.join(out_dir, "nepali_translit.schema.yaml"),
               "w", encoding="utf-8") as f:
-        f.write(SCHEMA_TEMPLATE.format(version=ENGINE_VERSION))
+        f.write(SCHEMA_TEMPLATE.format(version=ENGINE_VERSION,
+                                       alphabet=alphabet))
     with open(os.path.join(out_dir, "nepali_translit.dict.yaml"),
               "w", encoding="utf-8") as f:
         f.write(DICT_HEADER.format(version=ENGINE_VERSION))

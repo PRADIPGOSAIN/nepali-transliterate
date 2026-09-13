@@ -16,7 +16,7 @@
     <Name>Nepali Transliterate</Name>
     <Copyright>Pradip Gosain (GPL-2.0-or-later)</Copyright>
     <Author>Pradip Gosain</Author>
-    <Version>0.12.0</Version>
+    <Version>0.13.1</Version>
     <WebSite>https://github.com/PRADIPGOSAIN/nepali-transliterate</WebSite>
     <Description>Romanized Nepali transliteration (namaste -&gt; नमस्ते). Same mapping as the nepali-transl offline engine.</Description>
   </Info>
@@ -44,7 +44,7 @@
     <Keyboard>
       <Name>Nepali Transliterate</Name>
       <ID>nepali_translit</ID>
-      <Version>0.12.0</Version>
+      <Version>0.13.1</Version>
       <Languages>
         <Language ID="ne">Nepali (macrolanguage)</Language>
       </Languages>

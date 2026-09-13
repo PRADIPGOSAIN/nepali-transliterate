@@ -20,7 +20,7 @@ def _export_tmp():
 
 def test_rime_dict_format():
     tmp, rows = _export_tmp()
-    assert len(rows) > 6000, len(rows)
+    assert len(rows) > 7000, len(rows)
     path = os.path.join(tmp, "nepali_translit.dict.yaml")
     text = open(path, encoding="utf-8").read()
     assert "name: nepali_translit" in text
@@ -34,10 +34,31 @@ def test_rime_dict_format():
         assert form and all(
             unicodedata.name(c, "").startswith("DEVANAGARI")
             for c in form), line
-        assert code.isascii() and code.isalpha() and code.islower(), line
+        # codes are case-SENSITIVE by design (T->ट vs t->त); digits
+        # and / ~ * . appear in retroflex (t/), avagraha (~a), signs+digits
+        assert code and all(c.isascii() and (c.isalnum() or c in "/~*.")
+                            for c in code), line
     # hand entries come first: kathmandu precedes any auto-only key
     forms = [l.split("\t")[0] for l in lines]
     assert forms.index("काठमाडौं") < forms.index("काकी")
+
+
+def test_rime_phonetic_fallback():
+    # unknown words must still transliterate (syllabary), not dead-end:
+    # bare + explicit-a forms for clusters, combos, conjuncts, singles
+    tmp, rows = _export_tmp()
+    by_code = {}
+    for form, code in rows:
+        by_code.setdefault(code, form)
+    assert by_code.get("ksh") == "क्ष"
+    assert by_code.get("ksha") == "क्ष"
+    assert by_code.get("kaa") == "का"
+    assert by_code.get("k") == "क"
+    assert by_code.get("sta") == "स्त"
+    assert by_code.get("gyn") == "ज्ञ"
+    assert by_code.get("aa") == "आ"
+    assert by_code.get("5") == "५"
+    assert by_code.get("M") == "ं"
 
 
 def test_rime_schema_present():
@@ -50,7 +71,8 @@ def test_rime_schema_present():
 
 
 def run_all():
-    tests = [test_rime_dict_format, test_rime_schema_present]
+    tests = [test_rime_dict_format, test_rime_schema_present,
+             test_rime_phonetic_fallback]
     passed, failed = 0, 0
     for fn in tests:
         try:
