@@ -31,6 +31,7 @@ machine. Windows/macOS/mobile system-wide input: in development
 - [Project layout & tests](#project-layout--tests)
 - [License](#license)
 - [Platform support](SUPPORT.md)
+- [Complete Linux guide for beginners](GUIDE.md)
 
 ## Run it in 60 seconds
 
