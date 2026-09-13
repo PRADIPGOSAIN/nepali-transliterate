@@ -2,7 +2,7 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-39%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-41%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
 **Offline Nepali typing toolkit with roman transliteration, traditional
@@ -179,9 +179,12 @@ Type directly into Word, browsers, chat — any application:
   ([Nepali-Roman-Transliteration](https://huggingface.co/datasets/Saugatkafley/Nepali-Roman-Transliteration),
   MIT). Regenerate: `python3 tools/import_pairs.py nep_valid.json nep_test.json`.
 - **Ranked candidates + personal learning** — every word offers all its
-  forms with sources (`user > hand > auto > phonetic`); the phonetic
-  form is always present. Picking a non-top form teaches your install
+  forms with sources (exact top-1 first, then vowel-collapse fuzzy and
+  deschwa fuzzy alternates like `kaathmaandu`/`kathamandu`→काठमाडौं,
+  phonetic always present). Picking a non-top form teaches your install
   (`~/.config/nepali-transliterate/user.json`, never uploaded).
+- **~10k suggestion completions** mined from real Roman typing
+  (validated against the 122k-word Brihat Sabdakosh; English filtered).
   CLI: `python3 -m core.cli --cands nam`.
 - **Honest accuracy, not inflated**: the dictionary *memorizes* its
   training pairs (99.5% recall there). On never-seen pairs (seeded
@@ -245,7 +248,7 @@ tests/                 33 tests, stdlib only
 ```
 
 ```bash
-python3 tests/test_transliterate.py   # 26 — engine, dict, candidates, Preeti, Google
+python3 tests/test_transliterate.py   # 28 — engine, dict, fuzzy, candidates, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 ```

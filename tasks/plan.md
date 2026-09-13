@@ -174,6 +174,18 @@ and verified by tests.
 
 ### Checkpoint: Candidates — DONE (26+7+6 = 39 green)
 
+## Phase 13: Big Roman data + fuzzy matching — DONE (v0.10.0)
+- Surveyed dataset collections (IOST-ASCOL, PemaRG), Nepali-Flow suite,
+  Sabdakosh (MIT), pratt778 engine (studied, ideas reimplemented+credited),
+  LTK/CTRC layouts (already covered by our verified maps).
+- Nepali-Flow-Roman 307k rows (CC-BY-4.0): token frequencies -> cross-check
+  vs Sabdakosh 123k headwords -> ~70 confident colloquial hand entries
+  (x-family, haru, malai, hunxa...), 4,396 suggestion keys (English out).
+- Vowel-collapse + deschwa fuzzy alternates (never top-1: ki/anu lesson).
+- Single-truth ranking refactor; top()==transliterate() over 631 words.
+
+### Checkpoint: Roman data — DONE (28+7+6 = 41 green)
+
 ## Still open (needs your machines)
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.

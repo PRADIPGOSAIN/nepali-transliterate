@@ -22,6 +22,14 @@ except ImportError:
     except ImportError:
         AUTO_CORRECTIONS = {}  # generated file absent: regenerate via tools/
 
+try:
+    from .words_suggest import ROMAN_SUGGESTIONS
+except ImportError:
+    try:
+        from words_suggest import ROMAN_SUGGESTIONS
+    except ImportError:
+        ROMAN_SUGGESTIONS = []  # regenerate via tools/import_roman.py
+
 
 # Core mapping data extracted from ne-rom-translit.mim
 CONSONANT_MAP = {
@@ -93,6 +101,35 @@ COMPOUND_RULES = {
 # Matra characters (used to detect if a char is a dependent vowel)
 MATRA_SET = set(DEPENDENT_VOWELS.values())
 
+_VOWEL_LETTERS = frozenset("aeiou")
+
+
+def _collapse_vowels(key: str) -> str:
+    """Collapse runs of the same vowel: kaathmaandu -> kathmandu.
+
+    Doubled consonants are kept (chhatra stays chhatra). Used to build
+    and query the fuzzy index so spelling variants share one entry.
+    """
+    out = []
+    prev = ""
+    for ch in key:
+        if ch == prev and ch in _VOWEL_LETTERS:
+            continue
+        out.append(ch)
+        prev = ch
+    return "".join(out)
+
+
+def _deschwa_key(key: str) -> str:
+    """Drop interior short-a: kathamandu -> kthmndu.
+
+    Only meaningful for longer keys (callers guard len>=6); short words
+    over-collapse (ram -> rm), so they never enter the deschwa index.
+    """
+    if len(key) < 2:
+        return key
+    return key[0] + "".join(ch for ch in key[1:] if ch != "a")
+
 
 class NepaliTransliterator:
     """Converts romanized Nepali text to Devanagari Unicode using state machine."""
@@ -115,8 +152,31 @@ class NepaliTransliterator:
         )
 
     def _load_dictionary(self) -> set:
-        """Load suggestion pool: hand wordlist + auto-imported keys."""
-        return set(SUGGESTION_WORDS) | set(AUTO_CORRECTIONS.keys())
+        """Load suggestion pool + fuzzy lookup indexes.
+
+        Fuzzy indexes (idea: pratt778/nepali_transliteration, reimplemented):
+        vowel-collapsed keys (kaathmaandu/kathmandu -> kathmandu) and,
+        for longer keys only, deschwa keys (kathamandu -> kthmndu) so
+        loose spellings still find dictionary forms.
+        """
+        pool = (set(SUGGESTION_WORDS) | set(AUTO_CORRECTIONS.keys())
+                | set(ROMAN_SUGGESTIONS))
+        self._fuzzy_index: Dict[str, List[Tuple[str, str]]] = {}
+        self._deschwa_index: Dict[str, List[Tuple[str, str]]] = {}
+        for source, table in (("hand", WORD_CORRECTIONS),
+                              ("auto", AUTO_CORRECTIONS)):
+            for key, form in table.items():
+                # Every entry is reachable under its collapsed key, so
+                # spelling variants (kaathmaandu) find canonical entries
+                # (kathmandu). Exact hits still rank first (checked before).
+                nk = _collapse_vowels(key)
+                self._fuzzy_index.setdefault(nk, []).append((form, source))
+                if len(key) >= 6:
+                    dk = _deschwa_key(key)
+                    if dk != nk:
+                        self._deschwa_index.setdefault(dk, []).append(
+                            (form, source))
+        return pool
 
     def correct_word(self, word: str) -> Optional[str]:
         """Return dictionary correction for a word, if known."""
@@ -191,13 +251,16 @@ class NepaliTransliterator:
 
     # ---- candidate generation + ranking ----
 
-    def candidates(self, word: str) -> List[Tuple[str, str]]:
-        """Ranked Devanagari candidates for one romanized word.
+    def _ranked(self, word: str) -> List[Tuple[str, str]]:
+        """Ordered (form, source) list for one word.
 
-        Sources vote in priority order; first occurrence wins, order kept:
-          user lexicon > hand dictionary > auto dictionary > phonetics.
-        The phonetic form is ALWAYS present (last resort). Returns
-        [(form, source)] with source in {user, hand, auto, phonetic}.
+        First entry is ALWAYS the top-1 transliterate() output (with its
+        true source), so ranking can never disagree with typing. After it
+        come vowel-collapse fuzzy and deschwa fuzzy (long keys) alternates
+        for loose spellings, then the phonetic reading if not already
+        shown. Deduplicated, order kept. NOTE: dict lookups use the
+        lowered key, but phonetics run on the ORIGINAL word because case
+        is meaningful (trailing M = anusvara, m = consonant).
         """
         key = (word or "").strip().lower()
         if not key:
@@ -210,17 +273,37 @@ class NepaliTransliterator:
                 seen.add(form)
                 out.append((form, source))
 
-        # Mirror _transliterate_word priority exactly (user, stem, hand...).
-        add(self._user_lexicon().get(key), "user")
+        top = self._transliterate_word(word)
         stemmed = self._stem_mark(word)
-        if stemmed:
-            add(*stemmed)
-        add(WORD_CORRECTIONS.get(key), "hand")
-        add(AUTO_CORRECTIONS.get(key), "auto")
-        # NOTE: phonetic runs on the ORIGINAL word: case is meaningful
-        # (trailing M = anusvara, m = consonant: aM->अं but am->अम).
+        if self._user_lexicon().get(key) == top:
+            src = "user"
+        elif stemmed and stemmed[0] == top:
+            src = stemmed[1]
+        elif WORD_CORRECTIONS.get(key) == top:
+            src = "hand"
+        elif AUTO_CORRECTIONS.get(key) == top:
+            src = "auto"
+        else:
+            src = "phonetic"
+        add(top, src)
+        for form, source in self._fuzzy_index.get(
+                _collapse_vowels(key), [])[:2]:
+            add(form, "fuzzy:" + source)
+        if len(key) >= 6:
+            for form, source in self._deschwa_index.get(
+                    _deschwa_key(key), [])[:2]:
+                add(form, "deschwa:" + source)
         add(self._transliterate_word(word, use_dict=False), "phonetic")
         return out
+
+    def candidates(self, word: str) -> List[Tuple[str, str]]:
+        """Ranked Devanagari candidates for one romanized word.
+
+        Sources vote in priority order; first occurrence wins, order kept:
+          user > stem > hand > auto > fuzzy > deschwa > phonetic.
+        The phonetic form is ALWAYS present (last resort).
+        """
+        return self._ranked(word)
 
     def top(self, text: str) -> str:
         """Best single form. Delegates to transliterate() so the two can
@@ -267,15 +350,14 @@ class NepaliTransliterator:
         """Transliterate a single word using state machine."""
         if not word:
             return ""
-        # Dictionary autocorrect first: user-learned, hand, auto-imported.
-        # (handles kathmandu->काठमाडौं etc.)
+        # Exact lookup first (user > stem > hand > auto), else phonetic
+        # state machine below. Fuzzy variants NEVER decide top-1 (they
+        # misfire on short words); they only appear as click-to-learn
+        # alternates via candidates().
         if use_dict:
             user_hit = self._user_lexicon().get(word.lower())
             if user_hit:
                 return user_hit
-            # Trailing anuswar/visarga keystroke (capital M/N/H or *):
-            # in mim these keystrokes ARE the anusvara, so "sangaM" must read
-            # as stem+mark (सँगं), never as lowercase whole-word ("sangam").
             stemmed = self._stem_mark(word)
             if stemmed:
                 return stemmed[0]

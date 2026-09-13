@@ -26,7 +26,19 @@ Bundled / referenced works (NOT all GPL — see below):
    combined into this GPL-2.0-or-later project is explicitly permitted
    by LGPL-2.1 section 3.
 
-4. Optional runtime backends (NOT shipped, user-installed):
+4. tools/import_roman.py input data (NOT shipped, build-time only):
+   - Nepali-Flow-Roman by Boredoom17 (HuggingFace, CC-BY-4.0):
+     307k romanized rows mined for suggestion keys + gap analysis.
+     https://huggingface.co/datasets/Boredoom17/Nepali-Flow-Roman
+   - Nepali Brihat Sabdakosh JSON by bikashpadhikari (MIT):
+     123k headwords used ONLY as a validation set (membership test),
+     never imported. https://github.com/bikashpadhikari/nepali-brihat-sabdakosh-json
+   - wordfreq English top-50k (dev-time noise filter only).
+   Generated output core/words_suggest.py is project code (GPL-2.0+).
+5. Algorithm idea credit (reimplemented, no code copied):
+   vowel-collapse + deschwa fuzzy matching a la pratt778
+   (https://github.com/pratt778/nepali_transliteration).
+6. Optional runtime backends (NOT shipped, user-installed):
    - preeti-unicode-converter (MIT) for --preeti mode
    - Google Input Tools API (proprietary) for tools/google_bench.py QA only;
      its cached outputs (tools/.google_cache.jsonl, tools/google_review.tsv)

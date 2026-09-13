@@ -55,7 +55,9 @@ def test_punctuation():
 def test_suggestions():
     t = get_transliterator()
     _, suggs = t.transliterate_with_suggestions("nam")
-    assert "namaste" in suggs
+    assert suggs and all(s.startswith("nam") for s in suggs)
+    _, suggs2 = t.transliterate_with_suggestions("kathm")
+    assert "kathmandu" in suggs2
 
 
 def test_retroflex_slash_forms():
@@ -195,6 +197,37 @@ def test_candidates_ranking():
             os.environ["NEPALI_TRANSL_HOME"] = old
 
 
+def test_fuzzy_variants():
+    # loose spellings surface canonical forms as alternates WITHOUT
+    # hijacking top-1 (short words like ki/anu must stay phonetic).
+    t = get_transliterator()
+    c = t.candidates("kaathmaandu")
+    assert ("काठमाडौं", "fuzzy:hand") in c, c
+    assert c[0][0] == t.transliterate("kaathmaandu")  # top-1 agreement
+    assert any(s == "phonetic" for _, s in c)  # phonetic always present
+    c2 = t.candidates("kathamandu")
+    assert any(f == "काठमाडौं" and s.startswith("deschwa")
+               for f, s in c2), c2
+    # exact + short words unaffected by fuzzy
+    assert t.transliterate("ki") == "कि"
+    assert t.transliterate("anu") == "अनु"
+    assert t.transliterate("nepaal") == "नेपाल"
+
+
+def test_roman_corpus_words():
+    # frequent real typed forms from Nepali-Flow-Roman
+    assert transliterate("xa") == "छ"
+    assert transliterate("xaina") == "छैन"
+    assert transliterate("haru") == "हरू"
+    assert transliterate("malai") == "मलाई"
+    assert transliterate("hunxa") == "हुन्छ"
+    assert transliterate("hamro") == "हाम्रो"
+    assert transliterate("vayo") == "भयो"
+    assert transliterate("lagyo") == "लाग्यो"
+    t = get_transliterator()
+    assert "xaina" in t._dictionary and "vayo" in t._dictionary
+
+
 def test_top_matches_transliterate():
     from core.nepali_transl import get_transliterator
     t = get_transliterator()
@@ -257,7 +290,8 @@ def run_all():
         test_suggestions_ranked, test_auto_dictionary_quality,
         test_google_backend_optional, test_cli_google_optional,
         test_merge_suggestions_pure, test_candidates_ranking,
-        test_top_matches_transliterate, test_preeti_bridge,
+        test_top_matches_transliterate, test_fuzzy_variants,
+        test_roman_corpus_words, test_preeti_bridge,
     ]
     passed, failed = 0, 0
     for fn in tests:
