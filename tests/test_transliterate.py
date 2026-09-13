@@ -156,6 +156,19 @@ def test_google_backend_optional():
         print(f"  (skip test_google_backend_optional: offline/API down: {e})")
 
 
+def test_merge_suggestions_pure():
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "web"))
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "webapp", os.path.join(os.path.dirname(__file__), "..", "web", "app.py"))
+    webapp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(webapp)
+    assert webapp.merge_suggestions(["a", "b"], ["b", "c", "d"]) == ["a", "b", "c", "d"]
+    assert webapp.merge_suggestions(["a"], [], limit=8) == ["a"]
+    assert len(webapp.merge_suggestions([], ["x"] * 20)) <= 8
+
+
 def test_cli_google_optional():
     import io
     from contextlib import redirect_stdout
@@ -194,7 +207,7 @@ def run_all():
         test_dictionary_growth, test_sentence_probes,
         test_suggestions_ranked, test_auto_dictionary_quality,
         test_google_backend_optional, test_cli_google_optional,
-        test_preeti_bridge,
+        test_merge_suggestions_pure, test_preeti_bridge,
     ]
     passed, failed = 0, 0
     for fn in tests:

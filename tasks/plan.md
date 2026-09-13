@@ -137,6 +137,18 @@ and verified by tests.
 
 ### Checkpoint: Google — DONE
 
+## Phase 10: Kill the lag, merge Google in — DONE (v0.7.0)
+- Problem: Google mode fired a blocking network request per keystroke
+  (desktop froze on the UI thread; web showed stale/flickering output).
+- Fix: offline output renders instantly ALWAYS; Google candidates merge
+  into suggestions only — web (checkbox + seq guard + abort in-flight +
+  adaptive 500ms debounce + server cache), desktop (checkbox + daemon
+  worker thread + seq guard + session cache + status line).
+- Removed the separate laggy Google output mode; CLI --google stays.
+- Measured: plain 0.012s, first Google 0.6s, cached repeat 0.009s.
+
+### Checkpoint: Speed — DONE (22+7+6 = 35 green)
+
 ## Still open (needs your machines)
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.

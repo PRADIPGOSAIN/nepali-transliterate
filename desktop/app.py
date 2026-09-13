@@ -8,6 +8,7 @@ Usage:  python3 desktop/app.py
 import os
 import platform
 import sys
+import threading
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import ttk, messagebox
@@ -56,12 +57,17 @@ class App(tk.Tk):
             ("traditional", "Traditional (k → प)"),
             ("traditional-kmn", "Trad-rev (S → क्)"),
             ("romanized", "Romanized (k → क)"),
-            ("google", "Google (online)"),
         ]
         for value, label in self._modes:
             ttk.Radiobutton(modebar, text=label, variable=self.mode,
                             value=value, command=self._update).pack(
                                 side="left", padx=4)
+        self.google_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(modebar, text="+Google suggestions",
+                        variable=self.google_var,
+                        command=self._update).pack(side="left", padx=4)
+        self._seq = 0
+        self._gcache = {}
         self.input_label = ttk.Label(self, text="")
         self.input_label.pack(anchor="w", **pad)
         self.roman = tk.Text(self, height=7, font=("TkDefaultFont", 14))
@@ -98,7 +104,6 @@ class App(tk.Tk):
         "traditional": "Traditional keys (k → प, f → ा):",
         "traditional-kmn": "Revised Traditional keys (S → क्, m → ZWNJ):",
         "romanized": "Romanized keys (k → क, a → ा):",
-        "google": "Google Input Tools (needs internet):",
     }
 
     def _update(self):
@@ -109,35 +114,52 @@ class App(tk.Tk):
             self.out.delete("1.0", "end")
             self._show_suggestions([])
             return
-        if mode == "google":
-            # Online Google backend; fall back to offline ours on failure.
-            try:
-                from core.google_backend import google_sentence
-                self._set_status("Contacting Google…")
-                result = google_sentence(text)
-                if not result:
-                    raise RuntimeError("empty response")
-                self._set_status("Google (online)")
-            except Exception as e:
-                result = TR.transliterate(text)
-                self._set_status("Offline (Google unreachable)")
-                messagebox.showwarning(
-                    "Google unreachable",
-                    f"{e}\n\nShowing offline result instead.")
-            self.out.delete("1.0", "end")
-            self.out.insert("1.0", result)
-            self._show_suggestions([])
-            return
         if mode != "roman":
             # Direct key mapping: no phonetics, no dictionary.
             self.out.delete("1.0", "end")
             self.out.insert("1.0", TR.transliterate(text, mode=mode))
             self._show_suggestions([])
             return
+        # Roman mode: render OFFLINE result instantly (never block the UI),
+        # then enrich suggestions with Google in a background thread.
         result, suggs = TR.transliterate_with_suggestions(text)
         self.out.delete("1.0", "end")
         self.out.insert("1.0", result)
         self._show_suggestions(suggs)
+        if self.google_var.get():
+            words = text.split()
+            last = words[-1] if words else ""
+            if last:
+                self._seq += 1
+                threading.Thread(target=self._fetch_google,
+                                 args=(self._seq, last, list(suggs)),
+                                 daemon=True).start()
+
+    def _fetch_google(self, seq, word, base):
+        if word in self._gcache:
+            cands = self._gcache[word]
+        else:
+            try:
+                from core.google_backend import google_transliterate
+                cands = google_transliterate(word, num=3).get(word, [])
+            except Exception:
+                cands = []
+            if len(self._gcache) > 500:
+                self._gcache.pop(next(iter(self._gcache)))
+            self._gcache[word] = cands
+        seen = set(base)
+        extra = [c for c in cands if c and c not in seen][:3]
+        if extra:
+            self.after(0, lambda: self._add_google_suggs(seq, extra))
+
+    def _add_google_suggs(self, seq, extra):
+        if seq != self._seq:
+            return  # stale: user kept typing
+        for s in extra:
+            ttk.Button(self.sugg_frame, text="G: " + s,
+                       command=lambda v=s: self._apply_suggestion(v)).pack(
+                           side="left", padx=3)
+        self._set_status("Offline + Google suggestions")
 
     def _show_suggestions(self, suggs):
         for w in self.sugg_frame.winfo_children():

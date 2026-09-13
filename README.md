@@ -2,7 +2,7 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-33%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-35%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
 **Type Nepali everywhere — offline, on any OS.** An independent,
@@ -170,19 +170,17 @@ Type directly into Word, browsers, chat — any application:
 - **Measured: 99.5% correct on 6,905 real typed pairs.**
 - Suggestions while typing, shortest-first ranked.
 
-## Google Input Tools — integrated
+## Google Input Tools — merged into suggestions
 
-Google's engine is proprietary, but this project wires it in as an
-**opt-in online backend** (the offline engine stays the default):
+Google's engine is proprietary, but its candidates ride along **inside
+the normal flow** (offline engine stays instant and default):
 
-```bash
-python3 -m core.cli --google "timi kasto chhau"
-# → तिमि कस्तो छौ  (needs internet; clear error when offline)
-```
-
-The desktop app has a **Google (online)** mode with automatic offline
-fallback, and the web tool shows Google's answer **side-by-side with
-ours** so you can compare. No API keys, no signup.
+- Desktop + web: tick **+Google suggestions** — Google's top candidates
+  for your current word appear after ours (marked `G:` on desktop).
+  Output itself is always instant offline; Google loads in the background,
+  stale replies are discarded, repeat words are cached, failures are silent.
+- CLI one-shot: `python3 -m core.cli --google "timi kasto chhau"`
+  (needs internet; clear error when offline). No API keys, no signup.
 
 Benchmark mode (gentle + cached, disagreements human-reviewed only):
 
@@ -227,7 +225,7 @@ tests/                 33 tests, stdlib only
 ```
 
 ```bash
-python3 tests/test_transliterate.py   # 21 — engine, dict, Preeti, Google
+python3 tests/test_transliterate.py   # 22 — engine, dict, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 ```

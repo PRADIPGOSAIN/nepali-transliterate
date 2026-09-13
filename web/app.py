@@ -17,6 +17,41 @@ from core.nepali_transl import NepaliTransliterator, get_transliterator
 HERE = os.path.dirname(os.path.abspath(__file__))
 TR = get_transliterator()
 
+# In-memory Google suggestion cache (per server process, bounded).
+_GCACHE = {}
+_GCACHE_MAX = 500
+
+
+def _google_suggest_word(word):
+    """Google candidates for one romanized word; [] on any failure."""
+    if not word:
+        return []
+    hit = _GCACHE.get(word)
+    if hit is not None:
+        return hit
+    try:
+        from core.google_backend import google_transliterate
+        cands = google_transliterate(word, num=3).get(word, [])
+    except Exception:
+        cands = []
+    if len(_GCACHE) >= _GCACHE_MAX:
+        _GCACHE.pop(next(iter(_GCACHE)))
+    _GCACHE[word] = cands
+    return cands
+
+
+def merge_suggestions(base, extra, limit=8):
+    """Append Google candidates after ours, de-duplicated."""
+    seen = set(base)
+    merged = list(base)
+    for c in extra:
+        if c and c not in seen:
+            seen.add(c)
+            merged.append(c)
+        if len(merged) >= limit:
+            break
+    return merged
+
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "NepaliTransl/0.1"
@@ -83,30 +118,22 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(text, str):
                 text = ""
             mode = data.get("mode", "roman")
-            if mode not in NepaliTransliterator.MODES + ("google",):
+            if mode not in NepaliTransliterator.MODES:
                 mode = "roman"
-            error = ""
-            ours = ""
-            if mode == "google":
-                # Online Google backend + offline ours side-by-side.
-                ours, _ = TR.transliterate_with_suggestions(text)
-                try:
-                    from core.google_backend import google_sentence
-                    result = google_sentence(text)
-                    if not result:
-                        error = "Google returned no transliteration."
-                        result = ours
-                except Exception as e:
-                    error = f"Google unreachable ({e}). Showing offline result."
-                    result = ours
-                suggestions = []
-            elif mode != "roman":
+            want_google = bool(data.get("google_suggest"))
+            if mode != "roman":
                 result, suggestions = TR.transliterate(text, mode=mode), []
             else:
                 result, suggestions = TR.transliterate_with_suggestions(text)
+                if want_google:
+                    # Google candidates MERGED into suggestions (opt-in,
+                    # cached); failures stay silent, offline first.
+                    words = text.split()
+                    last = words[-1] if words else ""
+                    suggestions = merge_suggestions(
+                        suggestions, _google_suggest_word(last))
             payload = json.dumps(
-                {"result": result, "suggestions": suggestions, "mode": mode,
-                 "ours": ours, "error": error},
+                {"result": result, "suggestions": suggestions, "mode": mode},
                 ensure_ascii=False,
             ).encode("utf-8")
             self._send(200, payload, "application/json; charset=utf-8")

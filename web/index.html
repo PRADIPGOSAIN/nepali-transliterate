@@ -56,8 +56,9 @@
     onchange="update()"> Trad-rev</label>
   <label style="margin-left:12px"><input type="radio" name="mode" value="romanized"
     onchange="update()"> Romanized</label>
-  <label style="margin-left:12px"><input type="radio" name="mode" value="google"
-    onchange="update()"> Google (online)</label>
+  <label class="hint" style="margin-left:12px" title="Adds Google candidates to suggestions (needs internet)">
+    <input type="checkbox" id="googleSuggest" onchange="update()">
+    +Google suggestions</label>
 </div>
 
 <div class="box">
@@ -130,24 +131,27 @@ function currentMode() {
   return el ? el.value : 'roman';
 }
 
+let seq = 0, inflight = null;
 async function update() {
+  const mySeq = ++seq;
+  if (inflight) { try { inflight.abort(); } catch (e) {} }
   const text = romanEl.value;
   if (!text.trim()) { outEl.textContent = ''; sugEl.innerHTML = ''; return; }
+  const wantGoogle = document.getElementById('googleSuggest').checked;
+  const ctrl = new AbortController();
+  inflight = ctrl;
   try {
     const r = await fetch('/api/transliterate', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({text, mode: currentMode()})
+      body: JSON.stringify({text, mode: currentMode(),
+                            google_suggest: wantGoogle}),
+      signal: ctrl.signal
     });
     const d = await r.json();
+    if (mySeq !== seq) return;  // stale: a newer keystroke won
     outEl.textContent = d.result || '';
-    let extra = '';
-    if (d.mode === 'google') {
-      if (d.error) extra += '<div><b>Note:</b> ' + escapeHtml(d.error) + '</div>';
-      if (d.ours && d.ours !== d.result)
-        extra += '<div class="hint">Ours (offline): ' + escapeHtml(d.ours) + '</div>';
-    }
-    sugEl.innerHTML = extra;
+    sugEl.innerHTML = '';
     (d.suggestions || []).forEach(s => {
       const b = document.createElement('button');
       b.textContent = s;
@@ -164,7 +168,11 @@ async function update() {
 }
 
 let t = null;
-romanEl.addEventListener('input', () => { clearTimeout(t); t = setTimeout(update, 120); });
+romanEl.addEventListener('input', () => {
+  clearTimeout(t);
+  const slow = document.getElementById('googleSuggest').checked;
+  t = setTimeout(update, slow ? 500 : 120);  // let Google breathe
+});
 
 /* ---- visual keyboard ---- */
 let vkData = null, vkLayout = 'traditional';
