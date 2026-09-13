@@ -30,6 +30,9 @@ def main(argv=None):
     ap.add_argument("--google", action="store_true",
                     help="Use Google Input Tools API instead of the offline "
                          "engine (needs internet; roman text only)")
+    ap.add_argument("--no-dict", action="store_true",
+                    help="Pure m17n-style rules only: no word corrections, "
+                         "no learning, no composition. Deterministic.")
     ap.add_argument("--cands", metavar="WORD",
                     help="List ranked Devanagari candidates for one word "
                          "with their sources (user/hand/auto/phonetic)")
@@ -48,7 +51,7 @@ def main(argv=None):
             print("error: --cands needs a word.", file=sys.stderr)
             return 2
         for w in words:
-            cands = tr.candidates(w)
+            cands = tr.candidates(w, dictionary=not args.no_dict)
             if len(words) > 1:
                 print(f"== {w} ==")
             if not cands:
@@ -85,7 +88,8 @@ def main(argv=None):
                   file=sys.stderr)
             return 2
     else:
-        result = get_transliterator().transliterate(source, mode=args.layout)
+        result = get_transliterator().transliterate(
+            source, mode=args.layout, dictionary=not args.no_dict)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:

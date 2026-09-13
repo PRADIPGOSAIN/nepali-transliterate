@@ -299,6 +299,7 @@ WORD_CORRECTIONS = {
     'tapaiharu': 'तपाईंहरू',
     'kun': 'कुन',
     'pardip': 'प्रदिप',
+    'ranikot': 'रानीकोत',
     # everyday words no dictionary knew (phonetic fallback mangled them)
     'chiya': 'चिया',
     'dhido': 'ढिँडो',

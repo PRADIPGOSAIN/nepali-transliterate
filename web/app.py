@@ -112,11 +112,21 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._send(404, b"not found", "text/plain")
 
+    def _body(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            length = 0
+        try:
+            return json.loads(self.rfile.read(length) or b"{}")
+        except json.JSONDecodeError:
+            return {}
+
     def do_POST(self):
         path = urlparse(self.path).path
         if path == "/api/learn":
             # Remember a user's explicit choice locally (never leaves disk).
-            length = int(self.headers.get("Content-Length", 0))
+            data = self._body()
             try:
                 data = json.loads(self.rfile.read(length) or b"{}")
             except json.JSONDecodeError:
@@ -132,22 +142,21 @@ class Handler(BaseHTTPRequestHandler):
                        "application/json")
             return
         if path == "/api/transliterate":
-            length = int(self.headers.get("Content-Length", 0))
-            try:
-                data = json.loads(self.rfile.read(length) or b"{}")
-            except json.JSONDecodeError:
-                data = {}
+            data = self._body()
             text = data.get("text", "")
             if not isinstance(text, str):
                 text = ""
             mode = data.get("mode", "roman")
             if mode not in NepaliTransliterator.MODES:
                 mode = "roman"
+            use_dict = data.get("dictionary", True)
+            use_dict = True if use_dict is None else bool(use_dict)
             want_google = bool(data.get("google_suggest"))
             if mode != "roman":
                 result, suggestions, forms = TR.transliterate(text, mode=mode), [], []
             else:
-                result, suggestions = TR.transliterate_with_suggestions(text)
+                result, suggestions = TR.transliterate_with_suggestions(
+                    text, dictionary=use_dict)
                 if want_google:
                     # Google candidates MERGED into suggestions (opt-in,
                     # cached); failures stay silent, offline first.
@@ -160,7 +169,8 @@ class Handler(BaseHTTPRequestHandler):
                 words = text.split()
                 last = words[-1] if words else ""
                 forms = [{"form": f, "source": s, "roman": last}
-                         for f, s in TR.candidates(last)[:5]] if last else []
+                         for f, s in TR.candidates(
+                             last, dictionary=use_dict)[:5]] if last else []
             payload = json.dumps(
                 {"result": result, "suggestions": suggestions, "mode": mode,
                  "forms": forms},

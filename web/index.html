@@ -62,6 +62,9 @@
   <label class="hint" style="margin-left:12px" title="Adds Google candidates to suggestions (needs internet)">
     <input type="checkbox" id="googleSuggest" onchange="update()">
     +Google suggestions</label>
+  <label class="hint" style="margin-left:12px" title="Untick for pure m17n-style rules: no word corrections, no learning">
+    <input type="checkbox" id="useDict" checked onchange="update()">
+    Dictionary</label>
 </div>
 
 <div class="box">
@@ -150,6 +153,7 @@ async function update() {
   const text = romanEl.value;
   if (!text.trim()) { outEl.textContent = ''; sugEl.innerHTML = ''; return; }
   const wantGoogle = document.getElementById('googleSuggest').checked;
+  const useDict = document.getElementById('useDict').checked;
   const ctrl = new AbortController();
   inflight = ctrl;
   try {
@@ -157,7 +161,8 @@ async function update() {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({text, mode: currentMode(),
-                            google_suggest: wantGoogle}),
+                            google_suggest: wantGoogle,
+                            dictionary: useDict}),
       signal: ctrl.signal
     });
     const d = await r.json();

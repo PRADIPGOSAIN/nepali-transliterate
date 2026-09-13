@@ -2,7 +2,7 @@
 
 ![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-66%20passing-brightgreen.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg)
 
 **Offline Nepali typing toolkit with roman transliteration, traditional
@@ -211,6 +211,13 @@ Type directly into Word, browsers, chat — any application:
   50/50 split, `python3 tools/eval_split.py`) phonetic rules score
   **~11% top-1 overall, ~14% on frequent words** — ambiguous spellings
   keep every candidate instead of guessing wrong.
+- **Rules first, dictionary optional**: untick **Dictionary** (web /
+  desktop) or pass `--no-dict` (CLI) for pure m17n-style rules —
+  deterministic, nothing memorized (`kaama`→काम always, `kama`→कम
+  always). No rule can tell `kamal` (कमल) from a hypothetical
+  `kamal`→कमाल without a dictionary or explicit long vowels —
+  that is exactly what the optional layer is for. Machine-proven
+  against real m17n (`tests/test_m17n_parity.py`).
 - Suggestions while typing, shortest-first ranked.
 
 ## Google Input Tools — merged into suggestions
@@ -268,7 +275,7 @@ tests/                 33 tests, stdlib only
 ```
 
 ```bash
-python3 tests/test_transliterate.py   # 37 — engine, dict, fuzzy, candidates, documents, file APIs, Preeti, Google
+python3 tests/test_transliterate.py   # 39 — engine, dict, pure mode, fuzzy, candidates, documents, file APIs, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 python3 tests/test_desktop.py         # 5 — GUI build, typing, modes, IME (skips headless)

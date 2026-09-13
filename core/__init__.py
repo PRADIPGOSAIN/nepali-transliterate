@@ -20,7 +20,7 @@ try:
 except ImportError:
     ROMAN_SUGGESTIONS = []
 
-__version__ = "0.13.2"
+__version__ = "0.14.0"
 __all__ = [
     "NepaliTransliterator",
     "get_transliterator",

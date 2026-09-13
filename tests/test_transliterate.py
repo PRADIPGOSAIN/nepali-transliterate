@@ -301,6 +301,23 @@ def test_document_performance():
     assert dt < 2.0, f"too slow: {dt:.2f}s"
 
 
+def test_pure_rules_mode():
+    # dictionary=False: m17n-style deterministic rules, nothing memorized.
+    # namaste still works (pure phonetics); kathmandu shows raw rules.
+    t = get_transliterator()
+    assert t.transliterate("namaste", dictionary=False) == "नमस्ते"
+    assert t.transliterate("kathmandu", dictionary=False) == "कथ्मन्दु"
+    assert t.transliterate("kathmandu") == "काठमाडौं"
+    assert t.transliterate("kaama", dictionary=False) == "काम"
+    assert t.transliterate("kama", dictionary=False) == "कम"
+    # candidates collapse to phonetic only
+    assert t.candidates("nam", dictionary=False) == [("नम", "phonetic")]
+    # suggestions off, top() consistent
+    r, s = t.transliterate_with_suggestions("nam", dictionary=False)
+    assert r == "नम" and s == []
+    assert t.top("nam", dictionary=False) == "नम"
+
+
 def test_file_and_batch_apis():
     import tempfile
     from core.nepali_transl import get_transliterator
@@ -424,7 +441,7 @@ def run_all():
         test_merge_suggestions_pure, test_candidates_ranking,
         test_top_matches_transliterate, test_fuzzy_variants,
         test_roman_corpus_words, test_phonetic_never_dead_ends,
-        test_file_and_batch_apis,
+        test_file_and_batch_apis, test_pure_rules_mode,
         test_document_punctuation, test_decimal_numbers,
         test_latin_passthrough, test_suffix_composition,
         test_official_words, test_official_essay_lines,

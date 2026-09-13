@@ -73,6 +73,10 @@ class App(tk.Tk):
         self.ime_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(modebar, text="⌨️ Typewriter",
                         variable=self.ime_var).pack(side="left", padx=4)
+        self.dict_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(modebar, text="Dictionary",
+                        variable=self.dict_var,
+                        command=self._update).pack(side="left", padx=4)
         self._seq = 0
         self._gcache = {}
         self._last_gfetch = 0.0
@@ -126,7 +130,7 @@ class App(tk.Tk):
         if not m:
             return None
         tail = m.group(0)
-        nep = TR.transliterate(tail)
+        nep = TR.transliterate(tail, dictionary=self.dict_var.get())
         if not nep:
             return None
         self.roman.delete(f"insert-{len(tail)}c", "insert")
@@ -179,19 +183,22 @@ class App(tk.Tk):
         if mode != "roman":
             # Direct key mapping: no phonetics, no dictionary.
             self.out.delete("1.0", "end")
-            self.out.insert("1.0", TR.transliterate(text, mode=mode))
+            self.out.insert("1.0", TR.transliterate(text, mode=mode,
+                                                     dictionary=self.dict_var.get()))
             self._show_suggestions([])
             self._show_forms([])
             return
         # Roman mode: render OFFLINE result instantly (never block the UI),
         # then enrich suggestions with Google in a background thread.
-        result, suggs = TR.transliterate_with_suggestions(text)
+        result, suggs = TR.transliterate_with_suggestions(
+            text, dictionary=self.dict_var.get())
         self.out.delete("1.0", "end")
         self.out.insert("1.0", result)
         self._show_suggestions(suggs)
         words = text.split()
         last = words[-1] if words else ""
-        self._show_forms([(f, s, last) for f, s in TR.candidates(last)[:5]]
+        self._show_forms([(f, s, last) for f, s in TR.candidates(
+            last, dictionary=self.dict_var.get())[:5]]
                          if last else [])
         if self.google_var.get():
             words = text.split()

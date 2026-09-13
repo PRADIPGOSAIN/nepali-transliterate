@@ -377,7 +377,8 @@ class NepaliTransliterator:
         suf_ph = self._phonetic(suf)
         return [(pre_ph + form + suf_ph, source) for form, source in out]
 
-    def candidates(self, word: str) -> List[Tuple[str, str]]:
+    def candidates(self, word: str,
+                   dictionary: bool = True) -> List[Tuple[str, str]]:
         """Ranked Devanagari candidates for one romanized word.
 
         Contract: SINGLE word only (returns [] for phrases/empty; use
@@ -385,18 +386,23 @@ class NepaliTransliterator:
         top-1 transliterate() output; after it come fuzzy/deschwa
         alternates, then the phonetic reading if not already shown.
         The phonetic form is ALWAYS present (last resort).
+        dictionary=False: pure rules, exactly [(phonetic, 'phonetic')].
         """
+        if not dictionary:
+            ph = self._transliterate_word(word or "", use_dict=False)
+            return [(ph, "phonetic")] if ph else []
         return self._ranked(word)
 
-    def top(self, text: str) -> str:
+    def top(self, text: str, dictionary: bool = True) -> str:
         """Best single form. Delegates to transliterate() so the two can
         never disagree (candidates() is single-word; transliterate()
         handles phrases word by word)."""
-        return self.transliterate(text)
+        return self.transliterate(text, dictionary=dictionary)
 
     MODES = ("roman", "traditional", "traditional-kmn", "romanized")
 
-    def transliterate(self, text: str, mode: str = "roman") -> str:
+    def transliterate(self, text: str, mode: str = "roman",
+                      dictionary: bool = True) -> str:
         """Main entry point.
 
         mode="roman": transliterate romanized phonetics to Devanagari.
@@ -404,6 +410,11 @@ class NepaliTransliterator:
         mode="traditional-kmn": revised Traditional mapping (Keyman v1.3.1).
         mode="romanized": direct MPP Romanized key mapping.
         Direct modes map each key as-is: no phonetics, no dictionary.
+
+        dictionary=False: pure m17n-style rules only — no word corrections,
+        no learning, no composition. Deterministic: kaama always gives
+        काम, kama always gives कम. (No rule can tell kama/kamal apart
+        without a dictionary; that is why the layer exists at all.)
         """
         if not text:
             return ""
@@ -425,7 +436,8 @@ class NepaliTransliterator:
         # own dictionary lookup (glued "X\\npani" tokens used to miss).
         parts = re.split(r'(\s+)', text)
         return ''.join(
-            p if not p or p[0].isspace() else self._transliterate_word(p)
+            p if not p or p[0].isspace()
+            else self._transliterate_word(p, use_dict=dictionary)
             for p in parts
         )
 
@@ -666,12 +678,15 @@ class NepaliTransliterator:
             return c1 + HALANT + c2
         return None
 
-    def transliterate_with_suggestions(self, text: str) -> Tuple[str, List[str]]:
+    def transliterate_with_suggestions(
+            self, text: str,
+            dictionary: bool = True) -> Tuple[str, List[str]]:
         """Transliterate and get word suggestions for the last word."""
         words = text.split()
         last_word = words[-1] if words else ""
-        suggestions = self._get_suggestions(last_word.lower())
-        result = self.transliterate(text)
+        suggestions = (self._get_suggestions(last_word.lower())
+                       if dictionary else [])
+        result = self.transliterate(text, dictionary=dictionary)
         return result, suggestions
 
     def _get_suggestions(self, prefix: str) -> List[str]:
@@ -704,14 +719,18 @@ def get_transliterator() -> NepaliTransliterator:
     return _transliterator
 
 
-def transliterate(text: str, mode: str = "roman") -> str:
+def transliterate(text: str, mode: str = "roman",
+                  dictionary: bool = True) -> str:
     """Convenience function: romanized (or traditional) text to Devanagari."""
-    return get_transliterator().transliterate(text, mode=mode)
+    return get_transliterator().transliterate(text, mode=mode,
+                                              dictionary=dictionary)
 
 
-def transliterate_with_suggestions(text: str) -> Tuple[str, List[str]]:
+def transliterate_with_suggestions(text: str,
+                                   dictionary: bool = True) -> Tuple[str, List[str]]:
     """Transliterate and return suggestions."""
-    return get_transliterator().transliterate_with_suggestions(text)
+    return get_transliterator().transliterate_with_suggestions(
+        text, dictionary=dictionary)
 
 
 if __name__ == '__main__':

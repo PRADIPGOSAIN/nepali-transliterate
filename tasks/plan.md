@@ -258,6 +258,18 @@ and verified by tests.
   usle, laxmi, tapaiharu, pardip...) so caps variants resolve.
 - Deployed live; current IM = rime, dict rebuilt clean.
 
+## Phase 20: Rules-first, dictionary optional — DONE (v0.14.0)
+- Answer to "stop cheating, make like m17n": dictionary is now an
+  OPT-OUT layer (`--no-dict`, web/desktop checkboxes, API flag).
+- Pure mode proven identical to real m17n on ~85 inputs via
+  m17n-input-test battery (tests/test_m17n_parity.py); 5 intentional
+  improvements documented separately (jn, x, R/N/M starts, lone ~).
+- Honest framing documented: kaama->काम vs kama->कम shows why long
+  vowels must be explicit or dictionary-assisted — no rule can tell
+  kamal apart either way.
+
+### Checkpoint: Rules-first — DONE (39+7+6+5+3+4+2+2 = 68 green)
+
 ## Still open (human steps only)
 - PyPI upload needs your PyPI account (`twine upload dist/nepali_transl-*`;
   packages are validated and ready).
