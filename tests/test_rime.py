@@ -59,6 +59,13 @@ def test_rime_phonetic_fallback():
     assert by_code.get("aa") == "आ"
     assert by_code.get("5") == "५"
     assert by_code.get("M") == "ं"
+    # case variants: CAPSLOCK typing must work (Rime is case-sensitive)
+    assert by_code.get("MERO") == "मेरो"
+    assert by_code.get("Mero") == "मेरो"
+    assert by_code.get("NAMASTE") == "नमस्ते"
+    # ...without breaking case-meaningful singles
+    assert by_code.get("T") == "ट"
+    assert by_code.get("M") == "ं"
 
 
 def test_rime_schema_present():

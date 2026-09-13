@@ -109,6 +109,11 @@ def build_rows():
     UNKNOWN words still transliterate instead of dead-ending (mim-style):
     full syllabary (consonant x vowel incl. inherent-a), top conjuncts
     x vowels, bare single consonants/vowels, digits and signs.
+
+    Finally, UPPER + Capitalized variants of every code (Rime matching
+    is case-sensitive: MERO must find मेरो just like mero does).
+    Variants that collide with an existing different meaning are
+    skipped (T stays ट, never त).
     """
     rows, seen = [], set()
 
@@ -158,6 +163,16 @@ def build_rows():
         add(PUNNA_VIRAM[key], key)
     for key in sorted(NUMBERS):
         add(NUMBERS[key], key)
+    # case variants: UPPER + Capitalized duplicates (skipped on collision,
+    # so T keeps ट and M keeps ं). Makes CAPSLOCK typing just work.
+    for form, code in list(rows):
+        upper = code.upper()
+        if upper != code and upper not in seen:
+            add(form, upper)
+        if len(code) > 1:
+            titled = code[0].upper() + code[1:]
+            if titled != code and titled not in seen:
+                add(form, titled)
     return rows
 
 

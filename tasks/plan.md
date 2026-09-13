@@ -250,6 +250,14 @@ and verified by tests.
 
 ### Checkpoint: Rime fallback — DONE (37+7+6+5+3+4+3 = 65 green)
 
+## Phase 19: CAPSLOCK typing in system IME — DONE (v0.13.2)
+- User report: MERO NAM... typed nothing (Rime codes lowercase-only).
+- Export now emits UPPER + Capitalized variants per row (skipped on
+  meaning collisions: T stays ट, M stays ं). 23,043 rows.
+- Added missing everyday words the pair set lacked (mero, timro, aba,
+  usle, laxmi, tapaiharu, pardip...) so caps variants resolve.
+- Deployed live; current IM = rime, dict rebuilt clean.
+
 ## Still open (human steps only)
 - PyPI upload needs your PyPI account (`twine upload dist/nepali_transl-*`;
   packages are validated and ready).

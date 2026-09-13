@@ -110,6 +110,11 @@ def test_user_words():
     # words from real usage: nam->नाम (not नम), gosai->गोसाई
     assert transliterate("mero nam pradip gosai ho") == "मेरो नाम प्रदिप गोसाई हो"
     assert transliterate("gosain") == "गोसाईं"
+    assert transliterate("pardip") == "प्रदिप"
+    # ALL-CAPS: dictionary words resolve, the rest follows caps rules
+    # (capitals mean retroflex/long, same as the layout modes)
+    assert transliterate("MERO NAM GOSAIN HO") == "मेरो नाम गोसाईं हो"
+    assert transliterate("timro laxmi sita") == "तिम्रो लक्ष्मी सीता"
 
 
 def test_dictionary_growth():

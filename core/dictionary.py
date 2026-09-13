@@ -280,6 +280,25 @@ WORD_CORRECTIONS = {
     'patra': 'पत्र',
     'karyalaya': 'कार्यालय',
     'samasya': 'समस्या',
+    # everyday words the pair dataset missed (all verified standard forms)
+    'mero': 'मेरो',
+    'timro': 'तिम्रो',
+    'aba': 'अब',
+    'usle': 'उसले',
+    'yesle': 'यसले',
+    'sita': 'सीता',
+    'gita': 'गीता',
+    'hari': 'हरि',
+    'shyam': 'श्याम',
+    'laxmi': 'लक्ष्मी',
+    'saraswati': 'सरस्वती',
+    'durga': 'दुर्गा',
+    'shiva': 'शिव',
+    'bishnu': 'विष्णु',
+    'laxman': 'लक्ष्मण',
+    'tapaiharu': 'तपाईंहरू',
+    'kun': 'कुन',
+    'pardip': 'प्रदिप',
 }
 
 # Suggestion wordlist (romanized forms for autocomplete)
