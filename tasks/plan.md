@@ -270,6 +270,16 @@ and verified by tests.
 
 ### Checkpoint: Rules-first — DONE (39+7+6+5+3+4+2+2 = 68 green)
 
+## Phase 21: three-link study + Rime single-letter fix — DONE (v0.13.3)
+- sapradhan/ne-rom-translit == installed m17n-db (byte-identical): canonical.
+- scientiac fork = 7-byte diff (renamed method + N->ण experiment, author
+  defers to original). Evaluated: keeping our N (न word-start for Nepal,
+  ं mid-word) — strictly better for real words.
+- Blog = ne-trad-ttf history (different layout family, already covered).
+- Fixed Rime r->र् strand (hand single-letter forms lack a state machine
+  behind them in Rime); test_no_stranded_halant_singles guards it.
+- Deployed live; current IM = rime.
+
 ## Still open (human steps only)
 - PyPI upload needs your PyPI account (`twine upload dist/nepali_transl-*`;
   packages are validated and ready).

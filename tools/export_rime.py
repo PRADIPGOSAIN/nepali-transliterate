@@ -115,6 +115,8 @@ def build_rows():
     Variants that collide with an existing different meaning are
     skipped (T stays ट, never त).
     """
+    from core.nepali_transl import NepaliTransliterator
+    _ph = NepaliTransliterator()._transliterate_word
     rows, seen = [], set()
 
     def add(form, code):
@@ -124,7 +126,14 @@ def build_rows():
 
     for table in (WORD_CORRECTIONS, AUTO_CORRECTIONS):
         for key in sorted(table):
-            add(table[key], key)
+            form = table[key]
+            if len(key) == 1:
+                # Single-letter codes have no state machine behind them in
+                # Rime: engine-specific forms (r -> र् for repha building)
+                # would strand as literal halves. Use the bare phonetic
+                # reading instead (r -> र).
+                form = _ph(key, use_dict=False)
+            add(form, key)
 
     vkeys = sorted(DEPENDENT_VOWELS, key=len, reverse=True)
     # syllabary: every consonant key x every vowel key. Inherent-'a'

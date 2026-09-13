@@ -77,9 +77,19 @@ def test_rime_schema_present():
     assert "table_translator" in text
 
 
+def test_no_stranded_halant_singles():
+    # Single-letter codes have no state machine behind them: a form
+    # ending in a bare halant (old r -> र् bug) strands visibly.
+    # Explicit halant keys (\) end in ZWNJ/ZWJ, which is correct.
+    tmp, rows = _export_tmp()
+    bad = [(f, c) for f, c in rows
+           if len(c) == 1 and f.endswith("्")]
+    assert not bad, bad
+
+
 def run_all():
     tests = [test_rime_dict_format, test_rime_schema_present,
-             test_rime_phonetic_fallback]
+             test_rime_phonetic_fallback, test_no_stranded_halant_singles]
     passed, failed = 0, 0
     for fn in tests:
         try:

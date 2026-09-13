@@ -2,7 +2,7 @@
 # Format: <Devanagari word><TAB><roman code>. Hand entries first.
 ---
 name: nepali_translit
-version: "0.13.2"
+version: "0.14.0"
 sort: original
 columns:
   - text
@@ -179,7 +179,7 @@ columns:
 पर्ख	parxa
 पत्र	patra
 पोखरा	pokhara
-र्	r
+र	r
 र	ra
 रात	raat
 राति	raati
@@ -187,6 +187,7 @@ columns:
 राम	ram
 राम्री	ramri
 राम्रो	ramro
+रानीकोत	ranikot
 रुपैयाँ	rupaiya
 सबै	sabai
 सहयोगले	sahayogle
@@ -8336,6 +8337,8 @@ columns:
 राम्री	Ramri
 राम्रो	RAMRO
 राम्रो	Ramro
+रानीकोत	RANIKOT
+रानीकोत	Ranikot
 रुपैयाँ	RUPAIYA
 रुपैयाँ	Rupaiya
 सबै	SABAI
