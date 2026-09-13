@@ -27,6 +27,9 @@ def main(argv=None):
     ap.add_argument("--preeti", action="store_true",
                     help="Convert legacy Preeti encoding instead "
                          "(needs: pip install preeti-unicode-converter)")
+    ap.add_argument("--google", action="store_true",
+                    help="Use Google Input Tools API instead of the offline "
+                         "engine (needs internet; roman text only)")
     args = ap.parse_args(argv)
 
     if args.text is not None:
@@ -40,6 +43,19 @@ def main(argv=None):
     if args.preeti:
         from core.preeti_bridge import preeti_to_unicode
         result = preeti_to_unicode(source)
+    elif args.google:
+        from core.google_backend import google_sentence
+        try:
+            result = google_sentence(source)
+        except Exception as e:
+            print(f"error: Google Input Tools unreachable ({e}); "
+                  f"check internet or drop --google for offline mode.",
+                  file=sys.stderr)
+            return 2
+        if not result:
+            print("error: Google returned no transliteration.",
+                  file=sys.stderr)
+            return 2
     else:
         result = get_transliterator().transliterate(source, mode=args.layout)
 

@@ -128,6 +128,15 @@ and verified by tests.
 
 ### Checkpoint: Publish — DONE
 
+## Phase 9: Google backend integration — DONE (v0.6.0)
+- `google_sentence()` one-request helper in core/google_backend.py.
+- CLI `--google` (clear offline error, exit 2), desktop Google mode with
+  status line + offline fallback dialog, web Google mode showing
+  Google-vs-ours side-by-side (+ hardened non-string JSON inputs).
+- Network-safe tests (skip offline): backend + CLI. 21/21 green.
+
+### Checkpoint: Google — DONE
+
 ## Still open (needs your machines)
 - PyInstaller `.exe` on a Windows box for friends without Python.
 - Compile `.kmp` in Keyman Developer for system-wide typing.

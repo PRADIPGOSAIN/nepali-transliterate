@@ -56,6 +56,8 @@
     onchange="update()"> Trad-rev</label>
   <label style="margin-left:12px"><input type="radio" name="mode" value="romanized"
     onchange="update()"> Romanized</label>
+  <label style="margin-left:12px"><input type="radio" name="mode" value="google"
+    onchange="update()"> Google (online)</label>
 </div>
 
 <div class="box">
@@ -139,7 +141,13 @@ async function update() {
     });
     const d = await r.json();
     outEl.textContent = d.result || '';
-    sugEl.innerHTML = '';
+    let extra = '';
+    if (d.mode === 'google') {
+      if (d.error) extra += '<div><b>Note:</b> ' + escapeHtml(d.error) + '</div>';
+      if (d.ours && d.ours !== d.result)
+        extra += '<div class="hint">Ours (offline): ' + escapeHtml(d.ours) + '</div>';
+    }
+    sugEl.innerHTML = extra;
     (d.suggestions || []).forEach(s => {
       const b = document.createElement('button');
       b.textContent = s;

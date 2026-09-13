@@ -80,15 +80,33 @@ class Handler(BaseHTTPRequestHandler):
             except json.JSONDecodeError:
                 data = {}
             text = data.get("text", "")
+            if not isinstance(text, str):
+                text = ""
             mode = data.get("mode", "roman")
-            if mode not in NepaliTransliterator.MODES:
+            if mode not in NepaliTransliterator.MODES + ("google",):
                 mode = "roman"
-            if mode != "roman":
+            error = ""
+            ours = ""
+            if mode == "google":
+                # Online Google backend + offline ours side-by-side.
+                ours, _ = TR.transliterate_with_suggestions(text)
+                try:
+                    from core.google_backend import google_sentence
+                    result = google_sentence(text)
+                    if not result:
+                        error = "Google returned no transliteration."
+                        result = ours
+                except Exception as e:
+                    error = f"Google unreachable ({e}). Showing offline result."
+                    result = ours
+                suggestions = []
+            elif mode != "roman":
                 result, suggestions = TR.transliterate(text, mode=mode), []
             else:
                 result, suggestions = TR.transliterate_with_suggestions(text)
             payload = json.dumps(
-                {"result": result, "suggestions": suggestions, "mode": mode},
+                {"result": result, "suggestions": suggestions, "mode": mode,
+                 "ours": ours, "error": error},
                 ensure_ascii=False,
             ).encode("utf-8")
             self._send(200, payload, "application/json; charset=utf-8")

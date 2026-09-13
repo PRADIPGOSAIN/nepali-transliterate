@@ -146,14 +146,28 @@ def test_auto_dictionary_quality():
 
 
 def test_google_backend_optional():
-    import urllib.request
     try:
-        from core.google_backend import google_transliterate
+        from core.google_backend import google_transliterate, google_sentence
         res = google_transliterate("namaste", num=2)
         assert res.get("namaste", [None])[0] == "नमस्ते"
         assert transliterate("namaste") == "नमस्ते"  # we agree here
+        assert google_sentence("namaste kasto chha") == "नमस्ते कस्तो छ"
     except (OSError, RuntimeError) as e:
         print(f"  (skip test_google_backend_optional: offline/API down: {e})")
+
+
+def test_cli_google_optional():
+    import io
+    from contextlib import redirect_stdout
+    try:
+        from core.cli import main
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main(["--google", "namaste"])
+        assert rc == 0, rc
+        assert buf.getvalue().strip() == "नमस्ते"
+    except (OSError, RuntimeError) as e:
+        print(f"  (skip test_cli_google_optional: offline/API down: {e})")
 
 
 def test_preeti_bridge():
@@ -179,7 +193,8 @@ def run_all():
         test_midword_anuswar, test_avagraha_and_halant,
         test_dictionary_growth, test_sentence_probes,
         test_suggestions_ranked, test_auto_dictionary_quality,
-        test_google_backend_optional, test_preeti_bridge,
+        test_google_backend_optional, test_cli_google_optional,
+        test_preeti_bridge,
     ]
     passed, failed = 0, 0
     for fn in tests:

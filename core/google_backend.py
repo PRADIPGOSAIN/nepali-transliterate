@@ -58,6 +58,21 @@ def google_top(text: str) -> str:
     return cands[0] if cands else ""
 
 
+def google_sentence(text: str, timeout: int = 15) -> str:
+    """Best-effort full-text transliteration in ONE request.
+
+    The endpoint returns multi-word input as a single transliterated
+    sentence, so this works for words and sentences alike. Returns ""
+    when Google has no candidate. Raises URLError/RuntimeError on
+    network/API failure — callers must handle (offline fallback).
+    """
+    if not text or not text.strip():
+        return ""
+    res = google_transliterate(text.strip(), num=1, timeout=timeout)
+    cands = res.get(text.strip(), [])
+    return cands[0] if cands else ""
+
+
 if __name__ == "__main__":
     import sys
     for word in sys.argv[1:] or ["namaste", "kathmandu"]:

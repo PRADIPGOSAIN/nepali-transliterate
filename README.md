@@ -22,7 +22,7 @@ No accounts. No cloud. No tracking. Your keystrokes never leave your machine.
 - [Learn like a pro](#learn-like-a-pro)
 - [System-wide typing](#system-wide-typing)
 - [Dictionary & data](#dictionary--data)
-- [Google benchmark](#google-benchmark)
+- [Google Input Tools — integrated](#google-input-tools--integrated)
 - [Preeti rescue](#preeti-rescue)
 - [Project layout & tests](#project-layout--tests)
 - [License](#license)
@@ -170,11 +170,21 @@ Type directly into Word, browsers, chat — any application:
 - **Measured: 99.5% correct on 6,905 real typed pairs.**
 - Suggestions while typing, shortest-first ranked.
 
-## Google benchmark
+## Google Input Tools — integrated
 
-Google Input Tools is proprietary, but its public API endpoint lets us
-measure against it (online-only, gentle + cached, disagreements go to a
-human-review file — nothing auto-imported):
+Google's engine is proprietary, but this project wires it in as an
+**opt-in online backend** (the offline engine stays the default):
+
+```bash
+python3 -m core.cli --google "timi kasto chhau"
+# → तिमि कस्तो छौ  (needs internet; clear error when offline)
+```
+
+The desktop app has a **Google (online)** mode with automatic offline
+fallback, and the web tool shows Google's answer **side-by-side with
+ours** so you can compare. No API keys, no signup.
+
+Benchmark mode (gentle + cached, disagreements human-reviewed only):
 
 ```bash
 python3 tools/google_bench.py --limit 200
@@ -217,7 +227,7 @@ tests/                 33 tests, stdlib only
 ```
 
 ```bash
-python3 tests/test_transliterate.py   # 20 — engine, dict, Preeti, Google
+python3 tests/test_transliterate.py   # 21 — engine, dict, Preeti, Google
 python3 tests/test_traditional.py     # 7 — incl. 94/94 m17n parity
 python3 tests/test_layouts.py         # 6 — incl. Keyman-source parity
 ```

@@ -56,6 +56,7 @@ class App(tk.Tk):
             ("traditional", "Traditional (k → प)"),
             ("traditional-kmn", "Trad-rev (S → क्)"),
             ("romanized", "Romanized (k → क)"),
+            ("google", "Google (online)"),
         ]
         for value, label in self._modes:
             ttk.Radiobutton(modebar, text=label, variable=self.mode,
@@ -79,8 +80,12 @@ class App(tk.Tk):
         btns.pack(fill="x", **pad)
         ttk.Button(btns, text="Copy output", command=self._copy).pack(side="left", padx=4)
         ttk.Button(btns, text="Clear", command=self._clear).pack(side="left", padx=4)
-        ttk.Label(btns, text="Offline • ne-rom-translit based",
-                  foreground="gray").pack(side="right", padx=4)
+        self.status = ttk.Label(btns, text="Offline • by Pradip Gosain",
+                                foreground="gray")
+        self.status.pack(side="right", padx=4)
+
+    def _set_status(self, msg):
+        self.status.config(text=msg)
 
     def _on_edit(self, _evt=None):
         self.roman.edit_modified(False)
@@ -93,6 +98,7 @@ class App(tk.Tk):
         "traditional": "Traditional keys (k → प, f → ा):",
         "traditional-kmn": "Revised Traditional keys (S → क्, m → ZWNJ):",
         "romanized": "Romanized keys (k → क, a → ा):",
+        "google": "Google Input Tools (needs internet):",
     }
 
     def _update(self):
@@ -101,6 +107,25 @@ class App(tk.Tk):
         text = self.roman.get("1.0", "end").strip()
         if not text:
             self.out.delete("1.0", "end")
+            self._show_suggestions([])
+            return
+        if mode == "google":
+            # Online Google backend; fall back to offline ours on failure.
+            try:
+                from core.google_backend import google_sentence
+                self._set_status("Contacting Google…")
+                result = google_sentence(text)
+                if not result:
+                    raise RuntimeError("empty response")
+                self._set_status("Google (online)")
+            except Exception as e:
+                result = TR.transliterate(text)
+                self._set_status("Offline (Google unreachable)")
+                messagebox.showwarning(
+                    "Google unreachable",
+                    f"{e}\n\nShowing offline result instead.")
+            self.out.delete("1.0", "end")
+            self.out.insert("1.0", result)
             self._show_suggestions([])
             return
         if mode != "roman":
